@@ -16,6 +16,10 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),
+  // Optional: defaults to Resend's shared onboarding sender, which works
+  // without domain verification. Set to "RateWatch <alerts@yourdomain.com>"
+  // once your domain is verified in Resend.
+  EMAIL_FROM: z.string().min(3).default("RateWatch <onboarding@resend.dev>"),
   EXCHANGERATE_API_KEY: z.string().min(1),
   CRON_SECRET: z
     .string()
