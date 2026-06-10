@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AlertRowActions } from "@/features/alerts/components/alert-row-actions";
 import { CONDITION_LABELS } from "@/features/alerts/constants";
 import { formatDate, formatPair, formatRate } from "@/lib/format";
 import type { Alert } from "@/types";
@@ -26,6 +27,9 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
             <TableHead>Condition</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="hidden sm:table-cell">Created</TableHead>
+            <TableHead className="text-right">
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -54,6 +58,16 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
                 </TableCell>
                 <TableCell className="text-muted-foreground hidden whitespace-nowrap sm:table-cell">
                   {formatDate(alert.created_at)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <AlertRowActions
+                    alert={{
+                      id: alert.id,
+                      active: alert.active,
+                      from_currency: alert.from_currency,
+                      to_currency: alert.to_currency,
+                    }}
+                  />
                 </TableCell>
               </TableRow>
             );

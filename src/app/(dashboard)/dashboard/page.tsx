@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { AlertsEmptyState } from "@/features/alerts/components/alerts-empty-state";
 import { AlertsTable } from "@/features/alerts/components/alerts-table";
+import { CreateAlertDialog } from "@/features/alerts/components/create-alert-dialog";
 import { getAlertsForCurrentUser } from "@/features/alerts/services/queries";
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default async function DashboardPage() {
             <span className="font-mono text-xs">06:00 UTC</span>
           </p>
         </div>
-        {/* Create-alert button lands here in the CRUD phase */}
+        <CreateAlertDialog />
       </div>
 
       {alerts.length === 0 ? (
