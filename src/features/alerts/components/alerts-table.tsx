@@ -51,7 +51,9 @@ export function AlertsTable({ alerts }: AlertsTableProps) {
                 </TableCell>
                 <TableCell>
                   {alert.active ? (
-                    <Badge>Active</Badge>
+                    <Badge className="bg-brand text-brand-foreground">
+                      Active
+                    </Badge>
                   ) : (
                     <Badge variant="secondary">Paused</Badge>
                   )}

@@ -69,6 +69,7 @@ export function AlertRowActions({ alert }: AlertRowActionsProps) {
         checked={alert.active}
         onCheckedChange={handleToggle}
         disabled={isToggling}
+        className="data-[state=checked]:bg-brand"
         aria-label={`${alert.active ? "Pause" : "Resume"} alert for ${pairLabel}`}
       />
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

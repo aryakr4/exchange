@@ -4,6 +4,8 @@ import { LoginForm } from "@/features/auth/components/login-form";
 
 export const metadata: Metadata = {
   title: "Log in",
+  description: "Log in to your RateWatch account to manage your rate alerts.",
+  robots: { index: false },
 };
 
 export default async function LoginPage({

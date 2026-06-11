@@ -105,7 +105,7 @@ export function buildRateAlertEmail(data: RateAlertEmailData): RenderedEmail {
           <!-- Body -->
           <tr>
             <td style="padding:32px;">
-              <p style="font-family:${sans};font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;margin:0 0 8px;">Target reached</p>
+              <p style="font-family:${sans};font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#1d4ed8;margin:0 0 8px;">Target reached</p>
               <h1 style="font-family:${sans};font-size:22px;font-weight:600;color:#0c0a09;margin:0 0 16px;letter-spacing:-0.01em;">
                 ${pair} has ${condition.phrase} ${target}
               </h1>

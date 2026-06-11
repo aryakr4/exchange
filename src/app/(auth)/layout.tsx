@@ -5,15 +5,18 @@ export default function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="bg-muted/40 flex min-h-svh flex-col items-center justify-center gap-6 p-4">
-      <Link
-        href="/"
-        className="flex items-center gap-2 text-lg font-semibold tracking-tight"
-      >
-        <TrendingUp className="size-5" aria-hidden="true" />
-        RateWatch
-      </Link>
-      <main className="w-full max-w-sm">{children}</main>
+    <div className="flex min-h-svh flex-col">
+      <div className="bg-brand h-1" aria-hidden="true" />
+      <div className="bg-muted/40 flex flex-1 flex-col items-center justify-center gap-6 p-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-lg font-semibold tracking-tight"
+        >
+          <TrendingUp className="text-brand size-5" aria-hidden="true" />
+          RateWatch
+        </Link>
+        <main className="w-full max-w-sm">{children}</main>
+      </div>
     </div>
   );
 }
