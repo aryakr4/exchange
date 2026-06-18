@@ -1,0 +1,53 @@
+name: Supabase Keep-Alive
+
+# Supabase free-tier projects pause after 7 days of inactivity. This workflow
+# sends a lightweight query to the database on a schedule so the project keeps
+# registering activity and never auto-pauses.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL       e.g. https://abcdefgh.supabase.co
+#   SUPABASE_ANON_KEY  the project's anon/public key
+#
+# The query targets `daily_rates`, which has RLS enabled and no select policy,
+# so it returns HTTP 200 with an empty array — it touches the database (enough
+# to count as activity) without exposing any rows.
+
+on:
+  schedule:
+    # Every day at 09:00 UTC. Daily gives margin against GitHub occasionally
+    # skipping or delaying scheduled runs under load; the only requirement is
+    # that the gap between runs stays well under 7 days.
+    - cron: "0 9 * * *"
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_ANON_KEY secrets must be set."
+            exit 1
+          fi
+
+          # Strip any trailing slash from the URL.
+          base="${SUPABASE_URL%/}"
+
+          status=$(curl -sS -o /tmp/body.txt -w "%{http_code}" \
+            "$base/rest/v1/daily_rates?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
+          echo "HTTP $status"
+          echo "Response body: $(cat /tmp/body.txt)"
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 400 ]; then
+            echo "::error::Keep-alive ping failed with HTTP $status."
+            exit 1
+          fi
+
+          echo "Supabase keep-alive ping succeeded."
