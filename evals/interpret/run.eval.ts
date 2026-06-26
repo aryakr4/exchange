@@ -7,12 +7,7 @@ import { describe, it, expect } from "vitest";
 
 import { parseAlertWithClaude } from "@/features/alerts/services/parse-claude";
 import { GOLDEN_CASES, type GoldenCase } from "./dataset";
-import {
-  scoreCase,
-  summarize,
-  type CaseScore,
-  type EvalCaseResult,
-} from "./score";
+import { scoreCase, summarize, type EvalCaseResult } from "./score";
 import {
   formatCaseLine,
   formatMarkdownReport,
@@ -41,12 +36,18 @@ async function mapPool<T, R>(
   return results;
 }
 
-function describeOutput(score: CaseScore, raw: { from_currency: string; to_currency: string; condition: string; target_rate: number | null; clarification: string | null }): string {
-  if (raw.clarification != null) {
-    return `clarify: "${raw.clarification}"`;
-  }
+function describeOutput(raw: {
+  from_currency: string;
+  to_currency: string;
+  condition: string;
+  target_rate: number | null;
+  clarification: string | null;
+}): string {
   const target = raw.target_rate == null ? "auto" : String(raw.target_rate);
-  return `${raw.from_currency}→${raw.to_currency} ${raw.condition} ${target}`;
+  const fields = `${raw.from_currency}→${raw.to_currency} ${raw.condition} ${target}`;
+  return raw.clarification == null
+    ? fields
+    : `${fields} · clarify: "${raw.clarification}"`;
 }
 
 describe.skipIf(!apiKey)("interpret eval (live Claude)", () => {
@@ -61,7 +62,7 @@ describe.skipIf(!apiKey)("interpret eval (live Claude)", () => {
         async (testCase) => {
           const raw = await parseAlertWithClaude(client, testCase.input);
           const score = scoreCase(testCase.expected, raw);
-          return { case: testCase, score, got: describeOutput(score, raw) };
+          return { case: testCase, score, got: describeOutput(raw) };
         },
       );
 
