@@ -38,6 +38,14 @@ export const SUPPORTED_CURRENCIES = [
   { code: "THB", name: "Thai Baht" },
   { code: "AED", name: "UAE Dirham" },
   { code: "TRY", name: "Turkish Lira" },
+  { code: "PHP", name: "Philippine Peso" },
+  { code: "NGN", name: "Nigerian Naira" },
+  { code: "VND", name: "Vietnamese Dong" },
+  { code: "GHS", name: "Ghanaian Cedi" },
+  { code: "KES", name: "Kenyan Shilling" },
+  { code: "PKR", name: "Pakistani Rupee" },
+  { code: "BDT", name: "Bangladeshi Taka" },
+  { code: "COP", name: "Colombian Peso" },
 ] as const;
 
 export const SUPPORTED_CURRENCY_CODES = SUPPORTED_CURRENCIES.map(

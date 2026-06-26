@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { loginSchema, signupSchema } from "@/features/auth/schemas";
 import { createAlertSchema } from "@/features/alerts/schemas";
+import { SUPPORTED_CURRENCY_CODES } from "@/features/alerts/constants";
 
 const validAlert = {
   from_currency: "USD",
@@ -89,6 +90,12 @@ describe("createAlertSchema", () => {
       createAlertSchema.safeParse({ ...validAlert, target_rate: "1e12" })
         .success
     ).toBe(false);
+  });
+
+  it("supports major remittance-corridor currencies", () => {
+    for (const code of ["PHP", "NGN", "VND", "GHS", "KES", "PKR", "BDT", "COP"]) {
+      expect(SUPPORTED_CURRENCY_CODES).toContain(code);
+    }
   });
 });
 
