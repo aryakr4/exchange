@@ -110,6 +110,7 @@ cp .env.example .env.local
 | `EMAIL_FROM` | Optional sender; defaults to Resend onboarding sender |
 | `EXCHANGERATE_API_KEY` | **Secret.** Market data access key |
 | `CRON_SECRET` | **Secret.** Bearer token protecting the cron endpoint |
+| `ANTHROPIC_API_KEY` | **Optional, Secret.** Enables plain-English alert setup (Claude). Omit to disable; manual form unaffected |
 | `NEXT_PUBLIC_APP_URL` | Absolute app URL (links in emails) |
 
 All variables are Zod-validated at boot (`src/lib/env.ts`) — a missing secret
