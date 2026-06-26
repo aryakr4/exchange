@@ -133,6 +133,33 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/chec
 Run it twice — the second response reports `alreadyClaimed` instead of
 `emailsSent`. That's the idempotency lock working.
 
+## Evals
+
+The unit suite mocks Claude to test the plumbing; an **eval** measures whether
+Claude itself maps a plain-English request to the right structured alert. It
+scores the real model call against a golden set weighted toward the remittance
+audience — remittance direction reasoning, no-number intents, multilingual
+inputs, and cases the model should *clarify* rather than guess.
+
+```bash
+npm run eval     # needs ANTHROPIC_API_KEY; writes evals/interpret/results.md
+```
+
+The run fails if accuracy drops below `EVAL_MIN_ACCURACY` (default `0.8`), so a
+prompt or model regression is caught before it ships. Latest run
+([full report](evals/interpret/results.md)):
+
+| Category | Accuracy | | Category | Accuracy |
+|---|---|---|---|---|
+| direct | 4/4 | | direction | 3/3 |
+| remittance | 5/5 | | multilingual | 2/3 |
+| no_number | 3/3 | | ambiguous | 2/2 |
+
+**Overall: 19/20 (95%)** against `claude-haiku-4-5`. The one miss is a Portuguese
+case where the model inverted the currency direction — exactly the kind of edge
+an eval surfaces that mocked unit tests cannot. See [`evals/`](evals/) for the
+dataset and grader.
+
 ## Deploying to production
 
 ### Vercel
