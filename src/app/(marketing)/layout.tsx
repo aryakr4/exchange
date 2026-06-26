@@ -52,8 +52,9 @@ export default function MarketingLayout({
             </nav>
           </div>
           <p className="text-muted-foreground/70 max-w-3xl text-xs leading-relaxed">
-            Rates are indicative mid-market values checked once daily and are
-            not financial advice. RateWatch is an informational tool only.
+            Rates shown are indicative mid-market values checked once daily,
+            before any fees your transfer provider charges. RateWatch is an
+            informational tool, not financial advice.
           </p>
         </div>
       </footer>
