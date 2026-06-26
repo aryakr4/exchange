@@ -1,8 +1,15 @@
 # 📈 RateWatch
 
-Exchange-rate alerts, delivered once. Create an alert like **USD → EUR ≥ 0.95**,
-and RateWatch checks the market daily and emails you the moment your target is
-reached — exactly once per threshold crossing.
+**For everyone who sends money home.** Someone wiring wages to family abroad
+doesn't think in `USD/MXN ≥ 17.5` — they think *"tell me when my dollars send
+more pesos to my mom."* RateWatch lets them say exactly that: describe the alert
+in plain English, Claude turns it into a structured target, and one email lands
+the day the rate turns in their favor — so more reaches home.
+
+Under the hood it's a currency-rate alerter: create an alert like
+**USD → MXN ≥ 17.5**, and RateWatch checks the market daily and emails you the
+moment your target is reached — exactly once per threshold crossing. Rates shown
+are indicative mid-market values, before any fees a transfer provider charges.
 
 ## Stack
 

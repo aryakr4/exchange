@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  BellRing,
   CalendarClock,
   MailCheck,
+  MessageSquareText,
   ShieldCheck,
 } from "lucide-react";
 
@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Exchange Rate Alerts by Email",
+  title: "Rate Alerts for Sending Money Home",
   description:
-    "Set a target exchange rate for any major currency pair and get one email the moment it's reached. Checked daily at 06:00 UTC. Free to use.",
+    "Sending money to family abroad? Describe your target in plain English and get one email the day the rate turns in your favor — so more reaches home. Free.",
   alternates: { canonical: "/" },
 };
 
@@ -30,7 +30,7 @@ const jsonLd = {
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
   description:
-    "Create exchange-rate alerts and receive an email when a currency pair reaches your target rate. Rates are checked once daily.",
+    "Set a target exchange rate for a remittance corridor and get one email the day the rate turns in your favor. Rates are checked once daily.",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -38,40 +38,42 @@ const jsonLd = {
   },
 };
 
-const TICKER_PAIRS = [
-  { pair: "EUR / USD", rate: "1.0842", up: true },
-  { pair: "USD / JPY", rate: "151.37", up: false },
-  { pair: "GBP / USD", rate: "1.2691", up: true },
-  { pair: "USD / CHF", rate: "0.9012", up: false },
-  { pair: "AUD / USD", rate: "0.6614", up: true },
-  { pair: "USD / CAD", rate: "1.3568", up: false },
-  { pair: "USD / INR", rate: "83.412", up: true },
-  { pair: "EUR / GBP", rate: "0.8543", up: false },
-  { pair: "USD / SGD", rate: "1.3402", up: true },
-  { pair: "NZD / USD", rate: "0.6087", up: false },
+/** Remittance corridors (sender → recipient). ▲ = the sender's money is
+ * buying more today than usual — a good day to send. */
+const TICKER_CORRIDORS = [
+  { pair: "USD → MXN", rate: "17.62", up: true },
+  { pair: "USD → INR", rate: "83.41", up: true },
+  { pair: "USD → PHP", rate: "56.28", up: false },
+  { pair: "GBP → INR", rate: "105.8", up: true },
+  { pair: "USD → NGN", rate: "1,481", up: false },
+  { pair: "EUR → PHP", rate: "61.04", up: true },
+  { pair: "USD → VND", rate: "24,350", up: false },
+  { pair: "CAD → INR", rate: "61.22", up: true },
+  { pair: "USD → KES", rate: "129.4", up: false },
+  { pair: "AUD → PHP", rate: "37.18", up: true },
 ];
 
 const STEPS = [
   {
     number: "01",
-    icon: BellRing,
-    title: "Set your target",
+    icon: MessageSquareText,
+    title: "Say it in plain English",
     description:
-      "Pick a currency pair, a target rate, and a direction — above or below.",
+      "“Tell me when my dollars send more pesos to my mom in Mexico.” That's it — we turn your words into an alert.",
   },
   {
     number: "02",
     icon: CalendarClock,
-    title: "We check daily",
+    title: "We watch the rate daily",
     description:
-      "RateWatch pulls fresh market rates once a day and evaluates every active alert.",
+      "RateWatch checks the market once a day and tracks your target. Nothing to open, nothing to refresh.",
   },
   {
     number: "03",
     icon: MailCheck,
-    title: "Get one email",
+    title: "We email you when to send",
     description:
-      "The moment your target is crossed, one clean email lands in your inbox. No spam, ever.",
+      "The day the rate turns in your favor, one clear email lands in your inbox. Send then — and more reaches home.",
   },
 ];
 
@@ -83,13 +85,13 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Ticker strip */}
+      {/* Corridor ticker strip */}
       <div
         className="bg-foreground text-background overflow-hidden border-b"
         aria-hidden="true"
       >
         <div className="animate-marquee motion-reduce:animate-none flex w-max gap-8 py-1.5 font-mono text-xs">
-          {[...TICKER_PAIRS, ...TICKER_PAIRS].map((item, i) => (
+          {[...TICKER_CORRIDORS, ...TICKER_CORRIDORS].map((item, i) => (
             <span key={i} className="flex items-center gap-2 whitespace-nowrap">
               <span className="opacity-70">{item.pair}</span>
               <span>{item.rate}</span>
@@ -112,18 +114,17 @@ export default function LandingPage() {
         <div className="relative mx-auto grid w-full max-w-5xl gap-12 px-4 pt-16 pb-20 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pt-24">
           <div className="space-y-6">
             <p className="text-brand font-mono text-xs font-semibold tracking-[0.2em] uppercase">
-              Checked daily · Emailed once
+              For everyone who sends money home
             </p>
             <h1 className="text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl">
-              Stop refreshing charts.{" "}
-              <span className="text-brand">The right rate</span> will find
-              you.
+              Send the day your family{" "}
+              <span className="text-brand">gets the most</span>.
             </h1>
             <p className="text-muted-foreground max-w-prose text-lg">
-              Timing a transfer home — USD to INR, GBP to NGN, EUR to PHP?
-              Describe your alert in plain English and RateWatch emails you
-              the moment your target rate is reached. Set it once, then get
-              on with your life.
+              Wiring money to family abroad? Describe it in plain English —
+              “tell me when my dollars buy more pesos” — and RateWatch emails
+              you the one day the rate turns in your favor. No charts, no
+              jargon, no checking every morning.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Button size="lg" asChild>
@@ -144,17 +145,17 @@ export default function LandingPage() {
               <CardContent className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-sm font-medium">
-                    USD → EUR
+                    USD → MXN
                   </span>
                   <Badge className="bg-brand text-brand-foreground">
                     Active
                   </Badge>
                 </div>
                 <div className="font-mono text-3xl font-semibold tracking-tight">
-                  ≥ 0.9500
+                  ≥ 17.50
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Notify me when 1 USD buys at least 0.95 EUR
+                  Email me when $1 sends at least 17.50 pesos home
                 </p>
               </CardContent>
             </Card>
@@ -165,9 +166,9 @@ export default function LandingPage() {
                   aria-hidden="true"
                 />
                 <div className="space-y-1 text-sm">
-                  <p className="font-medium">Target reached: USD → EUR</p>
+                  <p className="font-medium">Good time to send: USD → MXN</p>
                   <p className="font-mono text-xs opacity-80">
-                    0.9512 ≥ 0.9500 · today, 06:00 UTC
+                    17.62 ≥ 17.50 · today, 06:00 UTC
                   </p>
                 </div>
               </CardContent>
@@ -183,7 +184,7 @@ export default function LandingPage() {
             How it works
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            Three steps, then silence until it matters
+            From a sentence to a well-timed transfer
           </h2>
           <div className="mt-8 grid gap-8 sm:grid-cols-3">
             {STEPS.map((step) => (
@@ -217,8 +218,8 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight">
-              Watching starts today at{" "}
-              <span className="font-mono text-blue-400">06:00 UTC</span>
+              Your next good day to send could be{" "}
+              <span className="font-mono text-blue-400">tomorrow</span>
             </h2>
             <p className="flex items-center gap-2 text-sm opacity-80">
               <ShieldCheck
@@ -231,7 +232,7 @@ export default function LandingPage() {
           </div>
           <Button size="lg" variant="secondary" asChild>
             <Link href="/signup">
-              Get started — it&apos;s free
+              Create your first alert — free
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </Button>
