@@ -120,9 +120,10 @@ export default function LandingPage() {
               you.
             </h1>
             <p className="text-muted-foreground max-w-prose text-lg">
-              RateWatch checks your currency pairs every day and sends one
-              email the moment your target rate is reached. Set it once,
-              then get on with your life.
+              Timing a transfer home — USD to INR, GBP to NGN, EUR to PHP?
+              Describe your alert in plain English and RateWatch emails you
+              the moment your target rate is reached. Set it once, then get
+              on with your life.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Button size="lg" asChild>

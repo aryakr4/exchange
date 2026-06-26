@@ -3,10 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreateAlertDialog } from "@/features/alerts/components/create-alert-dialog";
+import { interpretAlert } from "@/features/alerts/actions/interpret";
 
 const createAlert = vi.fn();
 vi.mock("@/features/alerts/actions/alerts", () => ({
   createAlert: (...args: unknown[]) => createAlert(...args),
+}));
+
+vi.mock("@/features/alerts/actions/interpret", () => ({
+  interpretAlert: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -114,5 +119,52 @@ describe("CreateAlertDialog", () => {
 
     await waitFor(() => expect(createAlert).toHaveBeenCalled());
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("pre-fills the form from a plain-English description via Claude", async () => {
+    const user = userEvent.setup();
+    vi.mocked(interpretAlert).mockResolvedValue({
+      status: "ok",
+      draft: {
+        from_currency: "USD",
+        to_currency: "INR",
+        condition: "greater_than",
+        target_rate: 84.6,
+      },
+      currentRate: 84.1,
+      suggested: true,
+      summary: "USD → INR, alert when 1 USD buys ≥ 84.6 (currently 84.1)",
+    });
+
+    render(<CreateAlertDialog />);
+    await user.click(screen.getByRole("button", { name: /new alert/i }));
+
+    await user.type(
+      screen.getByLabelText(/describe your alert/i),
+      "tell me when my dollars buy more rupees",
+    );
+    await user.click(screen.getByRole("button", { name: /interpret/i }));
+
+    expect(await screen.findByText(/currently 84\.1/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue("84.6")).toBeInTheDocument();
+  });
+
+  it("shows a clarification message without pre-filling", async () => {
+    const user = userEvent.setup();
+    vi.mocked(interpretAlert).mockResolvedValue({
+      status: "clarification",
+      message: "Pick two different currencies.",
+    });
+
+    render(<CreateAlertDialog />);
+    await user.click(screen.getByRole("button", { name: /new alert/i }));
+    await user.type(screen.getByLabelText(/describe your alert/i), "usd to usd");
+    await user.click(screen.getByRole("button", { name: /interpret/i }));
+
+    expect(
+      await screen.findByText(/pick two different currencies/i),
+    ).toBeInTheDocument();
+    // The form must NOT pre-fill on a clarification result.
+    expect(screen.queryByDisplayValue(/\d+\.\d+/)).not.toBeInTheDocument();
   });
 });
