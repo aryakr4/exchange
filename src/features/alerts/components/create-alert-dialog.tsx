@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -34,9 +34,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAlert } from "@/features/alerts/actions/alerts";
+import { interpretAlert } from "@/features/alerts/actions/interpret";
 import {
   CONDITION_LABELS,
   SUPPORTED_CURRENCIES,
+  type SupportedCurrencyCode,
 } from "@/features/alerts/constants";
 import {
   createAlertSchema,
@@ -60,6 +62,10 @@ function CurrencySelectItems() {
 export function CreateAlertDialog() {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [nlText, setNlText] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isInterpreting, startInterpret] = useTransition();
 
   const form = useForm<CreateAlertFormInput, unknown, CreateAlertInput>({
     resolver: zodResolver(createAlertSchema),
@@ -86,10 +92,42 @@ export function CreateAlertDialog() {
     });
   }
 
+  function handleInterpret() {
+    setNotice(null);
+    setSummary(null);
+    startInterpret(async () => {
+      const result = await interpretAlert({ text: nlText });
+      if (result.status === "ok") {
+        form.setValue(
+          "from_currency",
+          result.draft.from_currency as SupportedCurrencyCode,
+          { shouldValidate: true },
+        );
+        form.setValue(
+          "to_currency",
+          result.draft.to_currency as SupportedCurrencyCode,
+          { shouldValidate: true },
+        );
+        form.setValue("condition", result.draft.condition, {
+          shouldValidate: true,
+        });
+        form.setValue("target_rate", String(result.draft.target_rate), {
+          shouldValidate: true,
+        });
+        setSummary(result.summary);
+      } else {
+        setNotice(result.message);
+      }
+    });
+  }
+
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
     if (!nextOpen) {
       form.reset();
+      setNlText("");
+      setNotice(null);
+      setSummary(null);
     }
   }
 
@@ -110,6 +148,41 @@ export function CreateAlertDialog() {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
+          <div className="grid gap-2 rounded-lg border bg-muted/40 p-3">
+            <label
+              htmlFor="nl-alert"
+              className="text-sm font-medium flex items-center gap-1.5"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              Describe your alert in plain English
+            </label>
+            <textarea
+              id="nl-alert"
+              rows={2}
+              value={nlText}
+              onChange={(event) => setNlText(event.target.value)}
+              placeholder="Tell me when my dollars buy more rupees so I can send money home to India"
+              className="resize-none rounded-md border bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleInterpret}
+              disabled={isInterpreting || nlText.trim().length === 0}
+              className="justify-self-start"
+            >
+              {isInterpreting && (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              )}
+              {isInterpreting ? "Reading…" : "Interpret"}
+            </Button>
+            {summary && (
+              <p className="text-sm text-muted-foreground">{summary}</p>
+            )}
+            {notice && (
+              <p className="text-sm text-destructive">{notice}</p>
+            )}
+          </div>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="grid gap-4"
