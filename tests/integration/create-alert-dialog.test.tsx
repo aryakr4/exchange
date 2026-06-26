@@ -164,5 +164,7 @@ describe("CreateAlertDialog", () => {
     expect(
       await screen.findByText(/pick two different currencies/i),
     ).toBeInTheDocument();
+    // The form must NOT pre-fill on a clarification result.
+    expect(screen.queryByDisplayValue(/\d+\.\d+/)).not.toBeInTheDocument();
   });
 });

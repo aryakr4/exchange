@@ -159,6 +159,7 @@ export function CreateAlertDialog() {
             <textarea
               id="nl-alert"
               rows={2}
+              maxLength={500}
               value={nlText}
               onChange={(event) => setNlText(event.target.value)}
               placeholder="Tell me when my dollars buy more rupees so I can send money home to India"
