@@ -25,6 +25,9 @@ const serverEnvSchema = z.object({
     .string()
     .min(16, "CRON_SECRET must be at least 16 characters"),
   NEXT_PUBLIC_APP_URL: z.url(),
+  // Optional: enables the plain-English ("Interpret") alert input. When unset,
+  // the AI box self-disables and the manual form is unaffected.
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);
