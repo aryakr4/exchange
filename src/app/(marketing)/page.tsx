@@ -4,6 +4,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatRate } from "@/features/markets/corridors";
+import { CurrencyPair } from "@/features/markets/components/currency-pair";
 import {
   MarketsTicker,
   type TickerItem,
@@ -158,7 +159,7 @@ export default async function LandingPage() {
             >
               <div className="text-right">
                 <div className="font-mono text-sm tracking-wide text-[#9aa39b]">
-                  {row.label}
+                  <CurrencyPair label={row.label} />
                 </div>
                 {row.watch ? (
                   <div className="mt-0.5 font-mono text-[0.7rem] text-[#4cc79b]">

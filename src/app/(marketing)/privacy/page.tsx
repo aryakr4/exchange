@@ -164,10 +164,10 @@ export default function PrivacyPage() {
           <p>
             Questions about privacy? Email{" "}
             <a
-              href="mailto:privacy@ratewatch.app"
+              href="mailto:skullsupernatural@gmail.com"
               className="text-brand underline underline-offset-4"
             >
-              privacy@ratewatch.app
+              skullsupernatural@gmail.com
             </a>
             . See also our{" "}
             <Link href="/terms" className="text-brand underline underline-offset-4">

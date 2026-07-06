@@ -13,10 +13,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: `${appUrl}/markets`,
+      lastModified,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
       url: `${appUrl}/signup`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    {
+      url: `${appUrl}/faq`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${appUrl}/contact`,
+      lastModified,
+      changeFrequency: "yearly",
+      priority: 0.5,
     },
     {
       url: `${appUrl}/login`,

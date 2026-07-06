@@ -3,6 +3,36 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 
+function FooterColumn({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="font-mono text-[0.7rem] font-semibold tracking-[0.18em] text-foreground/70 uppercase">
+        {title}
+      </p>
+      <ul className="space-y-2 text-sm">{children}</ul>
+    </div>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+      >
+        {children}
+      </Link>
+    </li>
+  );
+}
+
 export default function MarketingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -40,32 +70,46 @@ export default function MarketingLayout({
       </header>
       <main className="flex-1">{children}</main>
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6">
-          <div className="text-muted-foreground flex flex-col items-start justify-between gap-3 text-sm sm:flex-row sm:items-center">
-            <p>© {new Date().getFullYear()} RateWatch</p>
-            <nav className="flex items-center gap-4" aria-label="Legal">
-              <Link
-                href="/privacy"
-                className="hover:text-foreground underline-offset-4 hover:underline"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="/terms"
-                className="hover:text-foreground underline-offset-4 hover:underline"
-              >
-                Terms
-              </Link>
+        <div className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+            <div className="space-y-3">
+              <Logo />
+              <p className="text-muted-foreground max-w-xs text-sm leading-relaxed">
+                One email the day your corridor turns in your favor — so more of
+                what you send reaches home.
+              </p>
+            </div>
+
+            <FooterColumn title="Product">
+              <FooterLink href="/markets">Live markets</FooterLink>
+              <FooterLink href="/signup">Get started</FooterLink>
+              <FooterLink href="/login">Log in</FooterLink>
+            </FooterColumn>
+
+            <FooterColumn title="Support">
+              <FooterLink href="/faq">FAQ</FooterLink>
+              <FooterLink href="/contact">Contact</FooterLink>
+            </FooterColumn>
+
+            <FooterColumn title="Legal">
+              <FooterLink href="/privacy">Privacy</FooterLink>
+              <FooterLink href="/terms">Terms</FooterLink>
+            </FooterColumn>
+          </div>
+
+          <div className="mt-10 border-t pt-6">
+            <p className="text-muted-foreground/70 max-w-3xl text-xs leading-relaxed">
+              Rates shown are indicative mid-market values checked once daily,
+              before any fees your transfer provider charges. RateWatch is an
+              informational tool, not financial advice.
+            </p>
+            <div className="text-muted-foreground mt-4 flex flex-col items-start justify-between gap-2 text-sm sm:flex-row sm:items-center">
+              <p>© {new Date().getFullYear()} RateWatch</p>
               <span className="font-mono text-xs">
                 market data · exchangerate.host
               </span>
-            </nav>
+            </div>
           </div>
-          <p className="text-muted-foreground/70 max-w-3xl text-xs leading-relaxed">
-            Rates shown are indicative mid-market values checked once daily,
-            before any fees your transfer provider charges. RateWatch is an
-            informational tool, not financial advice.
-          </p>
         </div>
       </footer>
     </div>

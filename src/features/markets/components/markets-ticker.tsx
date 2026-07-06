@@ -1,3 +1,5 @@
+import { CurrencyPair } from "@/features/markets/components/currency-pair";
+
 export interface TickerItem {
   /** e.g. "USD → MXN" */
   pair: string;
@@ -27,7 +29,7 @@ export function MarketsTicker({ items }: { items: TickerItem[] }) {
       <div className="animate-marquee motion-reduce:animate-none flex w-max gap-7 py-2 pl-7 font-mono text-xs">
         {[...items, ...items].map((item, i) => (
           <span key={i} className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-[#7f8a82]">{item.pair}</span>
+            <CurrencyPair label={item.pair} className="text-[#7f8a82]" />
             <span className="figure-lit tabular-nums">{item.rate}</span>
             <span className={item.up ? "text-[#4cc79b]" : "text-[#8b978f]"}>
               {item.up ? "▲" : "▼"}
