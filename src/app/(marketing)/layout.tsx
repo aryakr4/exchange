@@ -1,28 +1,38 @@
 import Link from "next/link";
-import { TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 
 export default function MarketingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="flex min-h-svh flex-col">
-      <div className="bg-brand h-1" aria-hidden="true" />
-      <header className="border-b">
+      <div className="h-0.5 bg-[#35a97d]" aria-hidden="true" />
+      <header className="board-surface border-b border-[rgb(239_241_234/12%)] text-[#eff1ea]">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-semibold tracking-tight"
+          <Logo />
+          <nav
+            className="flex items-center gap-1 sm:gap-2"
+            aria-label="Main"
           >
-            <TrendingUp className="text-brand size-5" aria-hidden="true" />
-            RateWatch
-          </Link>
-          <nav className="flex items-center gap-2" aria-label="Main">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button size="sm" asChild>
+            <Link
+              href="/markets"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-[#c9d0c9] transition-colors hover:text-white"
+            >
+              Markets
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-[#c9d0c9] transition-colors hover:text-white"
+            >
+              Log in
+            </Link>
+            <Button
+              size="sm"
+              asChild
+              className="bg-[#eff1ea] text-[#14201c] hover:bg-white"
+            >
               <Link href="/signup">Get started</Link>
             </Button>
           </nav>

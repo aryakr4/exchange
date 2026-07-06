@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarClock,
-  MailCheck,
-  MessageSquareText,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { formatRate } from "@/features/markets/corridors";
+import {
+  MarketsTicker,
+  type TickerItem,
+} from "@/features/markets/components/markets-ticker";
+import {
+  RateBoard,
+  type BoardRow,
+} from "@/features/markets/components/rate-board";
+import { getFeaturedMarkets } from "@/features/markets/service";
 
 export const metadata: Metadata = {
   title: "Rate Alerts for Sending Money Home",
@@ -18,6 +20,9 @@ export const metadata: Metadata = {
     "Sending money to family abroad? Describe your target in plain English and get one email the day the rate turns in your favor — so more reaches home. Free.",
   alternates: { canonical: "/" },
 };
+
+// Ticker + board data change at most once a day; re-render at most twice an hour.
+export const revalidate = 1800;
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -38,9 +43,9 @@ const jsonLd = {
   },
 };
 
-/** Remittance corridors (sender → recipient). ▲ = the sender's money is
- * buying more today than usual — a good day to send. */
-const TICKER_CORRIDORS = [
+/** Illustrative fallback, shown only before the first daily run populates real
+ * rates. ▲ = the sender's money is buying more today. */
+const FALLBACK_TICKER: TickerItem[] = [
   { pair: "USD → MXN", rate: "17.62", up: true },
   { pair: "USD → INR", rate: "83.41", up: true },
   { pair: "USD → PHP", rate: "56.28", up: false },
@@ -53,31 +58,76 @@ const TICKER_CORRIDORS = [
   { pair: "AUD → PHP", rate: "37.18", up: true },
 ];
 
+// The hero board leads with the corridor the headline speaks to, marked as a
+// worked example: a target set just above today's rate — not yet reached.
+const WATCHED_LABEL = "USD → MXN";
+const WATCHED_NOTE = "watching · ≥ 17.50";
+
+/** These three ARE an ordered sequence, so the numbering carries real meaning. */
 const STEPS = [
   {
     number: "01",
-    icon: MessageSquareText,
     title: "Say it in plain English",
     description:
       "“Tell me when my dollars send more pesos to my mom in Mexico.” That's it — we turn your words into an alert.",
   },
   {
     number: "02",
-    icon: CalendarClock,
     title: "We watch the rate daily",
     description:
       "RateWatch checks the market once a day and tracks your target. Nothing to open, nothing to refresh.",
   },
   {
     number: "03",
-    icon: MailCheck,
     title: "We email you when to send",
     description:
       "The day the rate turns in your favor, one clear email lands in your inbox. Send then — and more reaches home.",
   },
 ];
 
-export default function LandingPage() {
+function boardTime(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(iso));
+}
+
+export default async function LandingPage() {
+  const { markets, updatedAt } = await getFeaturedMarkets();
+  const live = markets.length > 0;
+
+  const tickerItems: TickerItem[] = live
+    ? markets.map((m) => ({
+        pair: m.label,
+        rate: formatRate(m.rate),
+        up: m.direction !== "down",
+      }))
+    : FALLBACK_TICKER;
+
+  const wallRows: BoardRow[] = (
+    live
+      ? markets.slice(0, 8).map((m) => ({
+          label: m.label,
+          rate: formatRate(m.rate),
+          direction: m.direction,
+        }))
+      : FALLBACK_TICKER.slice(0, 8).map((t) => ({
+          label: t.pair,
+          rate: t.rate,
+          direction: t.up ? ("up" as const) : ("down" as const),
+        }))
+  ).map((row) =>
+    row.label === WATCHED_LABEL ? { ...row, watch: WATCHED_NOTE } : row
+  );
+
+  const boardUpdated =
+    live && updatedAt
+      ? `Board updated ${boardTime(updatedAt)} UTC · mid-market, before fees`
+      : "Sample board · live rates update daily";
+
   return (
     <>
       <script
@@ -85,122 +135,119 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Corridor ticker strip */}
-      <div
-        className="bg-foreground text-background overflow-hidden border-b"
-        aria-hidden="true"
-      >
-        <div className="animate-marquee motion-reduce:animate-none flex w-max gap-8 py-1.5 font-mono text-xs">
-          {[...TICKER_CORRIDORS, ...TICKER_CORRIDORS].map((item, i) => (
-            <span key={i} className="flex items-center gap-2 whitespace-nowrap">
-              <span className="opacity-70">{item.pair}</span>
-              <span>{item.rate}</span>
-              <span
-                className={item.up ? "text-blue-400" : "text-neutral-500"}
+      {/* Corridor ticker — real daily rates once populated, illustrative before
+          the first cron run. */}
+      <MarketsTicker items={tickerItems} />
+
+      {/* Hero — the board wall. The market fills the space edge to edge; the
+          human message is pinned onto it like a note on the counter glass. */}
+      <section className="board-surface relative isolate overflow-hidden border-b border-[rgb(239_241_234/12%)]">
+        {/* The board itself: live corridors, each label sitting with its
+            figure on the right, the ruled lines fading toward the note. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-[56%] flex-col justify-center lg:flex [mask-image:linear-gradient(to_right,transparent,#000_16%)]"
+        >
+          {wallRows.map((row, i) => (
+            <div
+              key={row.label}
+              className={`board-row flex items-center justify-end gap-6 border-t border-[rgb(239_241_234/8%)] px-10 py-[1.15rem] last:border-b ${
+                row.watch ? "bg-[rgb(53_169_125/7%)]" : ""
+              }`}
+              style={{ animationDelay: `${i * 55}ms` }}
+            >
+              <div className="text-right">
+                <div className="font-mono text-sm tracking-wide text-[#9aa39b]">
+                  {row.label}
+                </div>
+                {row.watch ? (
+                  <div className="mt-0.5 font-mono text-[0.7rem] text-[#4cc79b]">
+                    {row.watch}
+                  </div>
+                ) : null}
+              </div>
+              <div className="figure-lit w-[7ch] text-right font-mono text-[2rem] leading-none font-medium tabular-nums">
+                {row.rate}
+              </div>
+              <div
+                className={`w-5 text-center font-mono text-base ${
+                  row.direction === "up"
+                    ? "text-[#4cc79b]"
+                    : row.direction === "down"
+                      ? "text-[#8b978f]"
+                      : "text-[#6b766f]"
+                }`}
               >
-                {item.up ? "▲" : "▼"}
-              </span>
-            </span>
+                {row.direction === "up" ? "▲" : row.direction === "down" ? "▼" : "—"}
+              </div>
+            </div>
           ))}
         </div>
-      </div>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div
-          className="pointer-events-none absolute inset-0 [background-image:linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] [background-size:48px_48px] opacity-40 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]"
-          aria-hidden="true"
-        />
-        <div className="relative mx-auto grid w-full max-w-5xl gap-12 px-4 pt-16 pb-20 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pt-24">
-          <div className="space-y-6">
-            <p className="text-brand font-mono text-xs font-semibold tracking-[0.2em] uppercase">
+        {/* The pinned paper note — warm, human, held against the cold board. */}
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:flex lg:min-h-[40rem] lg:items-center lg:py-28">
+          <div className="max-w-md rounded-lg bg-[#f3f4ec] p-8 text-[#14201c] shadow-[0_40px_90px_-45px_rgb(0_0_0/85%)] ring-1 ring-black/5 sm:p-10">
+            <p className="font-mono text-xs font-medium tracking-[0.22em] text-[#1a6e50] uppercase">
               For everyone who sends money home
             </p>
-            <h1 className="text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl">
-              Send the day your family{" "}
-              <span className="text-brand">gets the most</span>.
+            <h1 className="font-heading mt-5 text-[2.6rem] leading-[0.96] font-extrabold tracking-[-0.02em] sm:text-5xl">
+              More of it reaches <span className="text-[#1a6e50]">home</span>.
             </h1>
-            <p className="text-muted-foreground max-w-prose text-lg">
-              Wiring money to family abroad? Describe it in plain English —
-              “tell me when my dollars buy more pesos” — and RateWatch emails
-              you the one day the rate turns in your favor. No charts, no
-              jargon, no checking every morning.
+            <p className="mt-5 text-lg leading-relaxed text-[#4b554f]">
+              Sending wages to family abroad? RateWatch watches your corridor
+              and emails you the one day the rate turns in your favor — so more
+              of what you send actually lands.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Button size="lg" asChild>
                 <Link href="/signup">
                   Create your first alert
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
               </Button>
-              <Button size="lg" variant="ghost" asChild>
-                <Link href="/login">Log in</Link>
-              </Button>
+              <Link
+                href="/markets"
+                className="text-sm font-medium text-[#1a6e50] underline-offset-4 hover:underline"
+              >
+                or watch the live board →
+              </Link>
             </div>
           </div>
 
-          {/* Mock alert + email, overlapping */}
-          <div className="relative mx-auto w-full max-w-sm">
-            <Card className="relative z-10">
-              <CardContent className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-medium">
-                    USD → MXN
-                  </span>
-                  <Badge className="bg-brand text-brand-foreground">
-                    Active
-                  </Badge>
-                </div>
-                <div className="font-mono text-3xl font-semibold tracking-tight">
-                  ≥ 17.50
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  Email me when $1 sends at least 17.50 pesos home
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="bg-foreground text-background relative z-20 -mt-6 ml-10 border-t-2 border-t-[oklch(0.488_0.243_264.376)] shadow-lg">
-              <CardContent className="flex items-start gap-3 pt-2">
-                <MailCheck
-                  className="mt-0.5 size-4 shrink-0 text-blue-400"
-                  aria-hidden="true"
-                />
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium">Good time to send: USD → MXN</p>
-                  <p className="font-mono text-xs opacity-80">
-                    17.62 ≥ 17.50 · today, 06:00 UTC
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* On small screens the wall is hidden, so the board rides along
+              beneath the note instead of leaving empty dark space. */}
+          <div className="mt-10 lg:hidden">
+            <RateBoard rows={wallRows.slice(0, 5)} updatedLabel={boardUpdated} />
           </div>
         </div>
+
+        <p className="pointer-events-none absolute bottom-4 left-4 z-10 font-mono text-[0.7rem] tracking-wide text-[#6b766f] sm:left-6">
+          {boardUpdated}
+        </p>
       </section>
 
-      {/* How it works */}
+      {/* How it works — a genuine three-step sequence. */}
       <section className="border-t">
-        <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6">
-          <p className="text-brand font-mono text-xs font-semibold tracking-[0.2em] uppercase">
+        <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6 lg:py-24">
+          <p className="text-brand font-mono text-xs font-medium tracking-[0.22em] uppercase">
             How it works
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            From a sentence to a well-timed transfer
+          <h2 className="font-heading mt-3 max-w-xl text-3xl font-bold tracking-tight text-balance sm:text-[2.5rem] sm:leading-[1.05]">
+            From one sentence to a well-timed transfer.
           </h2>
-          <div className="mt-8 grid gap-8 sm:grid-cols-3">
+          <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-3">
             {STEPS.map((step) => (
-              <div key={step.number} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-brand font-mono text-sm font-semibold">
-                    {step.number}
-                  </span>
-                  <span className="bg-border h-px flex-1" aria-hidden="true" />
-                  <step.icon
-                    className="text-muted-foreground size-4"
-                    aria-hidden="true"
-                  />
-                </div>
-                <h3 className="font-medium">{step.title}</h3>
-                <p className="text-muted-foreground text-sm">
+              <div key={step.number} className="flex flex-col gap-4">
+                <span
+                  className="board-surface inline-flex size-10 items-center justify-center rounded-md font-mono text-sm font-medium text-[#eab662]"
+                  aria-hidden="true"
+                >
+                  {step.number}
+                </span>
+                <h3 className="text-base font-semibold tracking-tight">
+                  {step.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   {step.description}
                 </p>
               </div>
@@ -209,28 +256,32 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust note + CTA */}
-      <section className="bg-foreground text-background relative border-t">
+      {/* Trust note + CTA — the page resolves onto the board's dark surface. */}
+      <section className="board-surface relative border-t border-[rgb(239_241_234/12%)]">
         <div
-          className="bg-brand absolute inset-x-0 top-0 h-0.5"
+          className="absolute inset-x-0 top-0 h-px bg-[#35a97d]/60"
           aria-hidden="true"
         />
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold tracking-tight">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center">
+          <div className="space-y-3">
+            <h2 className="font-heading text-2xl font-bold tracking-tight text-[#eff1ea] sm:text-3xl">
               Your next good day to send could be{" "}
-              <span className="font-mono text-blue-400">tomorrow</span>
+              <span className="text-[#4cc79b]">tomorrow</span>.
             </h2>
-            <p className="flex items-center gap-2 text-sm opacity-80">
+            <p className="flex items-center gap-2 text-sm text-[#a9b3ab]">
               <ShieldCheck
-                className="size-4 text-blue-400"
+                className="size-4 shrink-0 text-[#4cc79b]"
                 aria-hidden="true"
               />
               Your alerts are private to your account — enforced in the
               database, not just the app.
             </p>
           </div>
-          <Button size="lg" variant="secondary" asChild>
+          <Button
+            size="lg"
+            asChild
+            className="bg-[#eff1ea] text-[#14201c] hover:bg-white"
+          >
             <Link href="/signup">
               Create your first alert — free
               <ArrowRight className="size-4" aria-hidden="true" />
