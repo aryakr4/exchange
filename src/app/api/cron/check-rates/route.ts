@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
+import { refreshFeaturedMarkets } from "@/features/markets/service";
 import { runDailyRateCheck } from "@/features/notifications/services/run-daily-check";
 import { env } from "@/lib/env";
 
@@ -35,11 +36,22 @@ export async function GET(request: Request) {
 
   try {
     const summary = await runDailyRateCheck();
+
+    // Refresh the public markets page's featured corridors. One extra API
+    // call; kept out of the alert pipeline so a market-data hiccup can never
+    // affect anyone's notifications.
+    let featuredMarketsSaved = 0;
+    try {
+      featuredMarketsSaved = await refreshFeaturedMarkets();
+    } catch (error) {
+      console.error(`[cron] refreshing featured markets failed (run=${runId}):`, error);
+    }
+
     console.info(
       `[cron] check-rates finished (run=${runId}):`,
-      JSON.stringify(summary)
+      JSON.stringify({ ...summary, featuredMarketsSaved })
     );
-    return NextResponse.json({ ok: true, runId, summary });
+    return NextResponse.json({ ok: true, runId, summary, featuredMarketsSaved });
   } catch (error) {
     console.error(`[cron] check-rates failed (run=${runId}):`, error);
     return NextResponse.json(

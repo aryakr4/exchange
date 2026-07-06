@@ -7,9 +7,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+  --font-heading: var(--font-display), var(--font-geist-sans), ui-sans-serif,
+    system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,91 +52,128 @@
 }
 
 :root {
-  /* LSE-style: monochrome with a cobalt accent */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* "Bureau" — banknote ink, warm ledger paper, a jade go-signal, and amber
+     board figures. Drawn from the money-transfer counter, not a tech brand. */
+  --background: #eceee6; /* ledger paper */
+  --foreground: #14201c; /* spruce banknote ink */
+  --card: #f5f6ef;
+  --card-foreground: #14201c;
+  --popover: #f5f6ef;
+  --popover-foreground: #14201c;
+  --primary: #14201c; /* dark ink — buttons read like a stamped seal */
+  --primary-foreground: #eceee6;
+  --secondary: #e2e4da;
+  --secondary-foreground: #14201c;
+  --muted: #e2e4da;
+  --muted-foreground: #5a655e;
+  --accent: #e2e4da;
+  --accent-foreground: #14201c;
+  --destructive: #b1402f;
+  --border: #d6d8cd;
+  --input: #d6d8cd;
+  --ring: #1e7a5b; /* jade — focus visibility */
+  --chart-1: #1e7a5b;
+  --chart-2: #e4a64b;
+  --chart-3: #2c3a35;
+  --chart-4: #93a099;
+  --chart-5: #14201c;
+  --radius: 0.375rem; /* crisp, instrument-like — not a soft pill */
+  --sidebar: #f5f6ef;
+  --sidebar-foreground: #14201c;
+  --sidebar-primary: #1e7a5b;
+  --sidebar-primary-foreground: #eceee6;
+  --sidebar-accent: #e2e4da;
+  --sidebar-accent-foreground: #14201c;
+  --sidebar-border: #d6d8cd;
+  --sidebar-ring: #1e7a5b;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* The whole page becomes the board: deep green-black, lit figures. */
+  --background: #0f1815;
+  --foreground: #e7e9e1;
+  --card: #16211e;
+  --card-foreground: #e7e9e1;
+  --popover: #16211e;
+  --popover-foreground: #e7e9e1;
+  --primary: #e7e9e1;
+  --primary-foreground: #0f1815;
+  --secondary: #1e2a26;
+  --secondary-foreground: #e7e9e1;
+  --muted: #1e2a26;
+  --muted-foreground: #93a099;
+  --accent: #1e2a26;
+  --accent-foreground: #e7e9e1;
+  --destructive: #e0674f;
+  --border: rgb(231 233 225 / 12%);
+  --input: rgb(231 233 225 / 16%);
+  --ring: #35a97d;
+  --chart-1: #35a97d;
+  --chart-2: #e4a64b;
+  --chart-3: #93a099;
+  --chart-4: #5a655e;
+  --chart-5: #e7e9e1;
+  --sidebar: #16211e;
+  --sidebar-foreground: #e7e9e1;
+  --sidebar-primary: #35a97d;
+  --sidebar-primary-foreground: #0f1815;
+  --sidebar-accent: #1e2a26;
+  --sidebar-accent-foreground: #e7e9e1;
+  --sidebar-border: rgb(231 233 225 / 12%);
+  --sidebar-ring: #35a97d;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  /* font-sans must live on <body>, not <html>: Next scopes the
+     --font-geist-sans variable to the <body> class, so applying it on <html>
+     resolves to the fallback (a serif on some systems). */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
-  html {
-    @apply font-sans;
+  /* Subtle fractal-noise paper grain, inlined so it needs no network request. */
+  .bg-paper-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-size: 140px 140px;
+  }
+  /* The exchange board — always a deep green-black surface, whatever the
+     theme, the way the board behind a bureau counter is always dark. */
+  .board-surface {
+    background-color: #14201c;
+    background-image: radial-gradient(
+      120% 80% at 50% -10%,
+      #1c2b26 0%,
+      #14201c 55%,
+      #0e1714 100%
+    );
+    color: #eff1ea;
+  }
+  /* Lit amber figures, like incandescent board digits. */
+  .figure-lit {
+    color: #eab662;
+    text-shadow: 0 0 14px rgb(228 166 75 / 35%);
+  }
+  /* Hairline tabular grid used inside board panels. */
+  .board-rule {
+    border-color: rgb(239 241 234 / 10%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .board-row {
+      animation: board-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
   }
 }
 @theme inline {
-  --color-brand: oklch(0.488 0.243 264.376);
-  --color-brand-foreground: oklch(1 0 0);
+  /* Deepened from the ring jade so small mono labels clear WCAG AA (~5.3:1)
+     on paper; the board uses its own brighter jade on dark. */
+  --color-brand: #1a6e50;
+  --color-brand-foreground: #eff1ea;
+  --color-amber: #e4a64b;
+  --color-board: #14201c;
 
-  --animate-marquee: marquee 45s linear infinite;
+  --animate-marquee: marquee 48s linear infinite;
 
   @keyframes marquee {
     from {
@@ -141,6 +181,17 @@
     }
     to {
       transform: translateX(-50%);
+    }
+  }
+
+  @keyframes board-in {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
     }
   }
 }

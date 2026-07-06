@@ -1,18 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Geist, IBM_Plex_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
+// Quiet, legible body face — lets the display and the board figures carry it.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Display: a contemporary grotesque with real character, used with restraint.
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+});
+
+// The rates-board figures and all data/labels — engineered, tabular.
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -46,7 +56,7 @@ export const metadata: Metadata = {
       "Set a target exchange rate and get one email the moment it's reached. Checked daily.",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "RateWatch — Exchange Rate Alerts by Email",
     description:
       "Set a target exchange rate and get one email the moment it's reached.",
@@ -71,7 +81,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${bricolage.variable} ${plexMono.variable} antialiased`}
       >
         {children}
         <Toaster richColors position="top-center" />

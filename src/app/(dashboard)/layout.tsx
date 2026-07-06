@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Home, TrendingUp } from "lucide-react";
+import { Home } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,13 +32,7 @@ export default async function DashboardLayout({
       <div className="bg-brand h-1" aria-hidden="true" />
       <header className="border-b">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-semibold tracking-tight"
-          >
-            <TrendingUp className="text-brand size-5" aria-hidden="true" />
-            RateWatch
-          </Link>
+          <Logo href="/" />
           <div className="flex min-w-0 items-center gap-1 sm:gap-3">
             <span
               className="text-muted-foreground hidden truncate font-mono text-xs sm:block"

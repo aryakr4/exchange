@@ -11,6 +11,11 @@ Under the hood it's a currency-rate alerter: create an alert like
 moment your target is reached — exactly once per threshold crossing. Rates shown
 are indicative mid-market values, before any fees a transfer provider charges.
 
+> **Inheriting this project?** Start with **[`RUNBOOK.md`](RUNBOOK.md)** — the
+> non-technical operator's guide to keeping RateWatch running, diagnosing the
+> handful of things that actually go wrong, and knowing when a problem is yours
+> versus an engineer's. This README is the technical layer beneath it.
+
 ## Stack
 
 | Layer | Technology |
