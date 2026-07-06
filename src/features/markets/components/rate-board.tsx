@@ -1,4 +1,5 @@
 import type { MarketDirection } from "@/features/markets/service";
+import { CurrencyPair } from "@/features/markets/components/currency-pair";
 
 export interface BoardRow {
   label: string;
@@ -72,7 +73,7 @@ export function RateBoard({
           >
             <div className="min-w-0">
               <div className="font-mono text-sm tracking-wide text-[#eff1ea]">
-                {row.label}
+                <CurrencyPair label={row.label} />
               </div>
               {row.watch ? (
                 <div className="mt-0.5 font-mono text-[0.7rem] tracking-wide text-[#4cc79b]">

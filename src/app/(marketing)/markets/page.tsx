@@ -8,7 +8,9 @@ import {
   RateBoard,
   type BoardRow,
 } from "@/features/markets/components/rate-board";
+import { CurrencyConverter } from "@/features/markets/components/currency-converter";
 import { getFeaturedMarkets } from "@/features/markets/service";
+import { getConverterRates } from "@/features/markets/converter";
 
 export const metadata: Metadata = {
   title: "Live Remittance Rates",
@@ -31,7 +33,14 @@ function boardTime(iso: string): string {
 }
 
 export default async function MarketsPage() {
-  const { markets, updatedAt } = await getFeaturedMarkets();
+  const [{ markets, updatedAt }, converterRates] = await Promise.all([
+    getFeaturedMarkets(),
+    getConverterRates(),
+  ]);
+
+  const converterLabel = converterRates
+    ? `as of ${boardTime(converterRates.fetchedAt)} UTC`
+    : "";
 
   const boardRows: BoardRow[] = markets.map((m) => ({
     label: m.label,
@@ -44,6 +53,16 @@ export default async function MarketsPage() {
     : "Awaiting first daily run";
 
   return (
+    <>
+      {converterRates ? (
+        <section className="mx-auto w-full max-w-5xl px-4 pt-16 sm:px-6">
+          <CurrencyConverter
+            quotes={converterRates.quotes}
+            fetchedLabel={converterLabel}
+          />
+        </section>
+      ) : null}
+
     <section className="mx-auto grid w-full max-w-5xl gap-x-12 gap-y-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
       <div className="space-y-6">
         <p className="text-brand font-mono text-xs font-medium tracking-[0.22em] uppercase">
@@ -91,5 +110,6 @@ export default async function MarketsPage() {
         )}
       </div>
     </section>
+    </>
   );
 }
