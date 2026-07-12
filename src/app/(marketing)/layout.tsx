@@ -63,7 +63,7 @@ export default function MarketingLayout({
               asChild
               className="bg-[#eff1ea] text-[#14201c] hover:bg-white"
             >
-              <Link href="/signup">Get started</Link>
+              <Link href="/signup">Set up an alert</Link>
             </Button>
           </nav>
         </div>
@@ -75,14 +75,14 @@ export default function MarketingLayout({
             <div className="space-y-3">
               <Logo />
               <p className="text-muted-foreground max-w-xs text-sm leading-relaxed">
-                One email the day your corridor turns in your favor — so more of
-                what you send reaches home.
+                A free tool for people who send money home. One email the day
+                your corridor turns in your favor.
               </p>
             </div>
 
-            <FooterColumn title="Product">
+            <FooterColumn title="The tool">
               <FooterLink href="/markets">Live markets</FooterLink>
-              <FooterLink href="/signup">Get started</FooterLink>
+              <FooterLink href="/signup">Set up an alert</FooterLink>
               <FooterLink href="/login">Log in</FooterLink>
             </FooterColumn>
 
