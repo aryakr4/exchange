@@ -6,6 +6,7 @@ import {
   getUnsentNotifications,
   markNotificationSent,
 } from "@/features/notifications/services/notifications";
+import { buildUnsubscribeUrls } from "@/features/notifications/services/unsubscribe";
 import { sendRateAlertEmail } from "@/lib/email";
 import { getMultipleRates, saveDailyRates } from "@/lib/exchange-rates";
 import type { FetchedRate } from "@/lib/exchange-rates";
@@ -38,6 +39,8 @@ export interface DailyCheckSummary {
   alreadyClaimed: number;
   emailsSent: number;
   emailsFailed: number;
+  /** Triggers whose owner opted out of email. Evaluated, recorded, not sent. */
+  suppressed: number;
   rearmed: number;
   durationMs: number;
 }
@@ -50,7 +53,11 @@ interface ActiveAlertRow {
   target_rate: number;
   condition: Enums<"alert_condition">;
   trigger_state: Enums<"alert_trigger_state">;
-  profiles: { email: string } | null;
+  profiles: {
+    email: string;
+    email_opt_out: boolean;
+    unsubscribe_token: string;
+  } | null;
 }
 
 const pairKey = (from: string, to: string) => `${from}->${to}`;
@@ -66,7 +73,7 @@ export async function runDailyRateCheck(): Promise<DailyCheckSummary> {
   const { data: alerts, error: alertsError } = await supabase
     .from("alerts")
     .select(
-      "id, user_id, from_currency, to_currency, target_rate, condition, trigger_state, profiles(email)"
+      "id, user_id, from_currency, to_currency, target_rate, condition, trigger_state, profiles(email, email_opt_out, unsubscribe_token)"
     )
     .eq("active", true);
 
@@ -84,6 +91,7 @@ export async function runDailyRateCheck(): Promise<DailyCheckSummary> {
     alreadyClaimed: 0,
     emailsSent: 0,
     emailsFailed: 0,
+    suppressed: 0,
     rearmed: 0,
     durationMs: 0,
   };
@@ -141,11 +149,26 @@ export async function runDailyRateCheck(): Promise<DailyCheckSummary> {
       if (decision !== "trigger") continue;
       summary.triggered++;
 
-      const email = alert.profiles?.email;
-      if (!email) {
+      const profile = alert.profiles;
+      if (!profile?.email) {
         console.warn(`[cron] alert ${alert.id} has no owner email, skipping`);
         continue;
       }
+
+      // Opted out: still advance the state machine, but claim nothing and send
+      // nothing. Leaving the alert "armed" would mean re-subscribing later
+      // dumps a backlog of stale crossings into the inbox.
+      if (profile.email_opt_out) {
+        await setTriggerState(alert.id, "triggered", fetchedAt.toISOString());
+        summary.suppressed++;
+        continue;
+      }
+
+      const email = profile.email;
+      const unsubscribe = buildUnsubscribeUrls(
+        env.NEXT_PUBLIC_APP_URL,
+        profile.unsubscribe_token
+      );
 
       // Claim before sending — the row is the lock.
       const claimed = await claimNotification({
@@ -177,6 +200,8 @@ export async function runDailyRateCheck(): Promise<DailyCheckSummary> {
             condition: alert.condition,
             triggeredAt: fetchedAt,
             appUrl: env.NEXT_PUBLIC_APP_URL,
+            unsubscribeUrl: unsubscribe.pageUrl,
+            oneClickUnsubscribeUrl: unsubscribe.oneClickUrl,
           },
         });
         await markNotificationSent(claimed.id);
@@ -232,13 +257,23 @@ async function retryUnsentEmails(): Promise<{
 
   for (const notification of unsent) {
     const alert = notification.alerts;
-    const email = notification.profiles?.email;
-    if (!alert || !email) {
+    const profile = notification.profiles;
+    if (!alert || !profile?.email) {
       console.warn(
         `[cron] sweep: notification ${notification.id} missing alert or email, skipping`
       );
       continue;
     }
+
+    // The query filters these out; belt and braces, because emailing someone
+    // after they unsubscribed is the one failure this feature exists to prevent.
+    if (profile.email_opt_out) continue;
+
+    const email = profile.email;
+    const unsubscribe = buildUnsubscribeUrls(
+      env.NEXT_PUBLIC_APP_URL,
+      profile.unsubscribe_token
+    );
 
     try {
       // Same idempotency key as the original attempt: if the email actually
@@ -255,6 +290,8 @@ async function retryUnsentEmails(): Promise<{
           condition: alert.condition,
           triggeredAt: new Date(`${notification.trigger_date}T00:00:00Z`),
           appUrl: env.NEXT_PUBLIC_APP_URL,
+          unsubscribeUrl: unsubscribe.pageUrl,
+          oneClickUnsubscribeUrl: unsubscribe.oneClickUrl,
         },
       });
       await markNotificationSent(notification.id);

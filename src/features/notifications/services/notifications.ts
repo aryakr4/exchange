@@ -76,6 +76,8 @@ export interface UnsentNotification {
   } | null;
   profiles: {
     email: string;
+    email_opt_out: boolean;
+    unsubscribe_token: string;
   } | null;
 }
 
@@ -92,9 +94,13 @@ export async function getUnsentNotifications(
   const { data, error } = await supabase
     .from("notifications")
     .select(
-      "id, rate, trigger_date, alerts(from_currency, to_currency, target_rate, condition), profiles(email)"
+      "id, rate, trigger_date, alerts(from_currency, to_currency, target_rate, condition), profiles!inner(email, email_opt_out, unsubscribe_token)"
     )
     .eq("email_sent", false)
+    // Never re-send to someone who unsubscribed after the original attempt
+    // failed. `!inner` above is required: with a left join, a filter on the
+    // embedded table nulls the embed instead of dropping the row.
+    .eq("profiles.email_opt_out", false)
     .order("created_at", { ascending: true })
     .limit(limit);
 
