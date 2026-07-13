@@ -22,18 +22,24 @@ export type Database = {
         Row: {
           id: string;
           email: string;
+          email_opt_out: boolean;
+          unsubscribe_token: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id: string;
           email: string;
+          email_opt_out?: boolean;
+          unsubscribe_token?: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           email?: string;
+          email_opt_out?: boolean;
+          unsubscribe_token?: string;
           created_at?: string;
           updated_at?: string;
         };
