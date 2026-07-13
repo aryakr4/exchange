@@ -32,8 +32,13 @@ export async function resumeEmails(): Promise<ActionResult> {
     return { success: false, error: "You must be logged in." };
   }
 
-  const result = await resubscribe(user.id);
-  if (result === "not_found") {
+  try {
+    const result = await resubscribe(user.id);
+    if (result === "not_found") {
+      return { success: false, error: "Couldn't update your email settings." };
+    }
+  } catch (error) {
+    console.error("[notifications] resume failed:", error instanceof Error ? error.message : String(error));
     return { success: false, error: "Couldn't update your email settings." };
   }
 
