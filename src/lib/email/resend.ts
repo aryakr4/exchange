@@ -52,6 +52,12 @@ export async function sendRateAlertEmail({
       subject,
       html,
       text,
+      headers: {
+        // RFC 8058. Both are required together: List-Unsubscribe alone is read
+        // as the old mailto-style hint and does not satisfy one-click.
+        "List-Unsubscribe": `<${data.oneClickUnsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     },
     { idempotencyKey }
   );

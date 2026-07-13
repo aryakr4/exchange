@@ -18,6 +18,10 @@ export interface RateAlertEmailData {
   triggeredAt: Date;
   /** Absolute app URL for the dashboard link. */
   appUrl: string;
+  /** Human-facing confirmation page — the in-body footer link. */
+  unsubscribeUrl: string;
+  /** RFC 8058 POST target — goes in the List-Unsubscribe header, not the body. */
+  oneClickUnsubscribeUrl: string;
 }
 
 export interface RenderedEmail {
@@ -76,6 +80,7 @@ export function buildRateAlertEmail(data: RateAlertEmailData): RenderedEmail {
     `Manage your alerts: ${dashboardUrl}`,
     ``,
     `Sent to ${data.userEmail} by RateWatch because you created this alert.`,
+    `Unsubscribe: ${data.unsubscribeUrl}`,
   ].join("\n");
 
   const mono =
@@ -141,10 +146,14 @@ export function buildRateAlertEmail(data: RateAlertEmailData): RenderedEmail {
           <!-- Footer -->
           <tr>
             <td style="padding:20px 32px;border-top:1px solid #e7e5e4;">
-              <p style="font-family:${sans};font-size:12px;line-height:1.6;color:#a8a29e;margin:0;">
+              <p style="font-family:${sans};font-size:12px;line-height:1.6;color:#a8a29e;margin:0 0 8px;">
                 Sent to ${escapeHtml(data.userEmail)} because you created this alert on RateWatch.
                 This alert is now paused for this market move — it re-arms automatically if the rate
                 moves away from your target.
+              </p>
+              <p style="font-family:${sans};font-size:12px;line-height:1.6;color:#a8a29e;margin:0;">
+                <a href="${escapeHtml(data.unsubscribeUrl)}" style="color:#78716c;text-decoration:underline;">Unsubscribe</a>
+                from all RateWatch emails.
               </p>
             </td>
           </tr>
