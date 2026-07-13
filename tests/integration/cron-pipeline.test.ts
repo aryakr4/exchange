@@ -248,7 +248,7 @@ describe("runDailyRateCheck", () => {
     );
   });
 
-  it("suppresses email for an opted-out owner but still advances the state", async () => {
+  it("suppresses email for an opted-out owner and leaves the alert armed", async () => {
     activeAlerts = [
       makeAlert({
         profiles: {
@@ -263,12 +263,13 @@ describe("runDailyRateCheck", () => {
 
     expect(claimNotification).not.toHaveBeenCalled();
     expect(sendRateAlertEmail).not.toHaveBeenCalled();
-    // State still flips: leaving it "armed" would dump a backlog of stale
-    // crossings on anyone who later re-subscribes.
-    expect(alertUpdates).toContainEqual({
-      payload: expect.objectContaining({ trigger_state: "triggered" }),
-      id: "alert-1",
-    });
+    // The state machine holds one state, not a queue: advancing to
+    // "triggered" here would mute the user until the rate retreated and
+    // re-crossed after they resumed. Leaving it "armed" means a resume while
+    // the target is still met yields exactly one email, with the current rate.
+    expect(alertUpdates).not.toContainEqual(
+      expect.objectContaining({ id: "alert-1" })
+    );
     expect(summary.suppressed).toBe(1);
     expect(summary.emailsSent).toBe(0);
   });

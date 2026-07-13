@@ -39,7 +39,11 @@ export interface DailyCheckSummary {
   alreadyClaimed: number;
   emailsSent: number;
   emailsFailed: number;
-  /** Triggers whose owner opted out of email. Evaluated, recorded, not sent. */
+  /**
+   * Triggers whose owner opted out of email. Nothing is sent and nothing is
+   * claimed; the alert is left "armed" so a later resume yields one email
+   * with the current rate instead of going silent forever.
+   */
   suppressed: number;
   rearmed: number;
   durationMs: number;
@@ -155,11 +159,12 @@ export async function runDailyRateCheck(): Promise<DailyCheckSummary> {
         continue;
       }
 
-      // Opted out: still advance the state machine, but claim nothing and send
-      // nothing. Leaving the alert "armed" would mean re-subscribing later
-      // dumps a backlog of stale crossings into the inbox.
+      // Opted out: send nothing and claim nothing, and leave the alert ARMED.
+      // The state machine holds one state, not a queue — so staying armed means
+      // a user who resumes while their target is met gets exactly one email,
+      // with that day's rate. Advancing to "triggered" here would instead mute
+      // them until the rate retreated and re-crossed.
       if (profile.email_opt_out) {
-        await setTriggerState(alert.id, "triggered", fetchedAt.toISOString());
         summary.suppressed++;
         continue;
       }
