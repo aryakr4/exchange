@@ -72,8 +72,14 @@ path. Hence two URLs:
 | URL | Method | Purpose |
 |---|---|---|
 | `/api/unsubscribe?token=…` | POST | `List-Unsubscribe` header target. Opts out, returns 200, renders nothing. |
-| `/api/unsubscribe?token=…` | GET | Some clients follow the header as a link. Redirects to the page below. |
-| `/unsubscribe?token=…` | GET | In-body footer link. Human-facing page with a Resume button. |
+| `/api/unsubscribe?token=…` | GET | Some clients follow the header as a link. Redirects to the page below. Mutates nothing. |
+| `/unsubscribe?token=…` | GET | In-body footer link. Renders a confirm button; the opt-out happens in a Server Action on click. |
+
+**No GET may opt anyone out.** Corporate link scanners (Outlook Safe Links,
+antivirus gateways) issue GET requests against every URL in an inbound email. If
+the footer link opted out on load, those scanners would silently unsubscribe
+users who never clicked. So the page confirms via a Server Action, and the API
+route's GET only redirects. One-click is unaffected: scanners do not POST.
 
 Middleware needs no change: `PROTECTED_PREFIXES` covers only `/dashboard`, and
 the matcher already excludes `/api/`. An unauthenticated click will not be
@@ -141,7 +147,8 @@ interpretation and does not satisfy one-click.
 A banner when `email_opt_out` is true: "Email alerts are paused," with a Resume
 button calling `resubscribe`. Without it, unsubscribe becomes a one-way door
 with no path back inside the product — a dark pattern in its own right, and a
-support burden.
+support burden. This is also where the confirmation page sends people who want
+back in, since the unsubscribe token is not a login.
 
 ## Testing
 
