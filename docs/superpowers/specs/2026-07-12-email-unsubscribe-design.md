@@ -105,13 +105,26 @@ tokens are valid. The miss is logged server-side.
 
 Two changes in the cron, not one.
 
-**1. `runDailyRateCheck` suppresses the send but still advances state.** For an
-opted-out owner, skip `claimNotification` and the email — but still call
-`setTriggerState(alert.id, "triggered", …)`. Leaving the alert `armed` would
-mean a user who re-subscribes months later receives a backlog of stale
-threshold crossings the moment the state machine catches up. The edge-trigger
-machine stays honest; only delivery is suppressed. A `suppressed` counter joins
-`DailyCheckSummary`.
+**1. `runDailyRateCheck` suppresses the send and leaves the alert `armed`.** For
+an opted-out owner, skip `claimNotification`, skip the email, and do not touch
+`trigger_state`. A `suppressed` counter joins `DailyCheckSummary`.
+
+> **Corrected after the final review.** An earlier version of this spec had the
+> suppressed branch advance `trigger_state` to `triggered`, justified by a fear
+> that leaving it `armed` would dump "a backlog of stale crossings" on a user who
+> re-subscribes. **That reasoning was wrong.** The alert holds a single current
+> state, not a queue, so staying `armed` produces exactly ONE email on resume,
+> carrying that day's rate.
+>
+> Advancing the state is what actually broke things. Ana sets USD→INR ≥ 88 and
+> opts out. August: the rate hits 88.2 → suppressed, state → `triggered`. The rate
+> stays above 88 for months. October: she resumes. Every run now evaluates
+> `met && triggered` → `"none"`, so **she hears nothing, indefinitely, while her
+> target is continuously met** — she would only be emailed if the rate first fell
+> below 88 and re-crossed. Silent failure of the product's core promise.
+>
+> Re-arming is unaffected: the `rearm` branch runs before the opt-out check, so an
+> opted-out `triggered` alert whose rate retreats still returns to `armed`.
 
 **2. `retryUnsentEmails` must filter too.** This is the subtle one. The sweep
 re-sends notifications claimed on *previous* runs. A user whose send failed
@@ -121,6 +134,16 @@ after unsubscribing. `getUnsentNotifications` therefore gains an
 
 Skipping either change leaves a hole; skipping the second leaves a hole that
 only appears after a delivery failure, which is exactly when nobody is looking.
+
+**3. The sweep must also be bounded by age.** Filtering opted-out profiles out of
+the sweep creates a new hole: a notification claimed *before* the opt-out, whose
+email failed, is now excluded from the sweep forever — never sent, never marked
+sent. If that user later resumes, the sweep loads it oldest-first and delivers a
+months-old rate under the words "Current rate" (Resend's ~24h idempotency window
+is long expired). `getUnsentNotifications` therefore only retries notifications
+from the last 3 days. This is correct independently of the opt-out feature: a
+rate from more than a few days ago is not current and must never be presented as
+though it were.
 
 ## Email changes
 
