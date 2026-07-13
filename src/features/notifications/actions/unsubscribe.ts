@@ -1,6 +1,13 @@
 "use server";
 
-import { unsubscribeByToken } from "@/features/notifications/services/unsubscribe";
+import { revalidatePath } from "next/cache";
+
+import {
+  resubscribe,
+  unsubscribeByToken,
+} from "@/features/notifications/services/unsubscribe";
+import { createClient } from "@/lib/supabase/server";
+import type { ActionResult } from "@/types";
 
 /**
  * The human path: invoked by the confirm button on /unsubscribe.
@@ -13,4 +20,23 @@ export async function confirmUnsubscribe(
 ): Promise<{ ok: boolean }> {
   const result = await unsubscribeByToken(token);
   return { ok: result === "ok" };
+}
+
+/** Turn alert email back on. The user id comes from the session, never the client. */
+export async function resumeEmails(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "You must be logged in." };
+  }
+
+  const result = await resubscribe(user.id);
+  if (result === "not_found") {
+    return { success: false, error: "Couldn't update your email settings." };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
 }
