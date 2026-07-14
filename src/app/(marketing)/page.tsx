@@ -347,7 +347,7 @@ export default async function LandingPage() {
             What it costs
           </p>
           <h2 className="font-heading mt-3 max-w-xl text-3xl font-bold tracking-tight text-[#eff1ea] text-balance sm:text-[2.5rem] sm:leading-[1.05]">
-            Nothing. Not nothing for now — nothing.
+            Nothing
           </h2>
 
           <ul className="mt-10 grid max-w-4xl gap-x-10 gap-y-5 text-[0.95rem] leading-relaxed text-[#a9b3ab] sm:grid-cols-2">

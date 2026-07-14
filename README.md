@@ -1,20 +1,50 @@
 # 📈 RateWatch
 
-**For everyone who sends money home.** Someone wiring wages to family abroad
-doesn't think in `USD/MXN ≥ 17.5` — they think *"tell me when my dollars send
-more pesos to my mom."* RateWatch lets them say exactly that: describe the alert
-in plain English, Claude turns it into a structured target, and one email lands
-the day the rate turns in their favor — so more reaches home.
+**Tell it what you're waiting for. It emails you the day the market agrees.**
 
-Under the hood it's a currency-rate alerter: create an alert like
+[![Live](https://img.shields.io/badge/live-exchange--psi--ochre.vercel.app-35a97d?style=flat-square)](https://exchange-psi-ochre.vercel.app)
+![Next.js 15](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript)
+![Tests](https://img.shields.io/badge/tests-102%20passing-4cc79b?style=flat-square)
+![Claude](https://img.shields.io/badge/LLM%20eval-95%25-d97757?style=flat-square)
+
+---
+
+Someone wiring wages to family abroad doesn't think in `USD/MXN ≥ 17.5` — they
+think *"tell me when my dollars send more pesos to my mom."* RateWatch lets
+them say exactly that: describe the alert in plain English, Claude turns it
+into a structured target, and one email lands the day the rate turns in their
+favor — so more reaches home.
+
+Strip away the copy and it's a currency-rate alerter: create an alert like
 **USD → MXN ≥ 17.5**, and RateWatch checks the market daily and emails you the
-moment your target is reached — exactly once per threshold crossing. Rates shown
-are indicative mid-market values, before any fees a transfer provider charges.
+moment your target is reached — exactly once per threshold crossing, forever
+free, nothing to open in between.
 
-> **Inheriting this project?** Start with **[`RUNBOOK.md`](RUNBOOK.md)** — the
-> non-technical operator's guide to keeping RateWatch running, diagnosing the
-> handful of things that actually go wrong, and knowing when a problem is yours
-> versus an engineer's. This README is the technical layer beneath it.
+**[→ Try it live](https://exchange-psi-ochre.vercel.app)**
+
+## Why this repo is worth a look
+
+This started as a weekend product idea but turned into an exercise in
+building the boring parts *right* — the parts that don't show up in a demo
+but are the difference between a toy and something you'd trust with your
+mom's remittance:
+
+- **An LLM feature with an actual eval harness**, not vibes. Plain-English →
+  structured alert is graded against a golden set (remittance-direction
+  reasoning, multilingual input, ambiguous cases the model should refuse to
+  guess on) and the build fails if accuracy drops below threshold. See
+  [Evals](#evals).
+- **Idempotency taken seriously.** A cron job that emails people is exactly
+  the kind of thing that silently double-sends during a redeploy or a retry.
+  Here it can't — a unique `(alert_id, trigger_date)` claim row makes
+  duplicate delivery structurally impossible, not just unlikely.
+- **RLS as the actual authorization boundary**, not an app-layer `if`
+  statement — the database enforces who can see what, so a bug in a Server
+  Action can't leak another user's alerts.
+- **102 tests + a separate eval suite**, because "the mock passed" and "the
+  model got it right" are different claims and this repo doesn't conflate
+  them.
 
 ## Stack
 
@@ -28,8 +58,8 @@ are indicative mid-market values, before any fees a transfer provider charges.
 | Market data | exchangerate.host |
 | Scheduling | Vercel Cron |
 | Validation | Zod (shared client/server schemas) |
-| Forms | React Hook Form |
-| Testing | Vitest + React Testing Library (72 tests) |
+| AI | Claude (plain-English → structured alert, with evals) |
+| Testing | Vitest + React Testing Library (102 tests) |
 
 ## Architecture
 
@@ -42,71 +72,93 @@ Vercel Cron ──► /api/cron/check-rates (CRON_SECRET) ──► services ─
                      └──► Resend (alert emails)                   │
 ```
 
-Key properties:
+**Engineering decisions worth noting:**
 
-- **RLS is the authorization floor** — user-facing code runs with the anon key
-  and the caller's session; the database itself prevents cross-user access.
+- **RLS is the authorization floor** — user-facing code runs with the anon
+  key and the caller's session; the database itself prevents cross-user
+  access, so app-layer bugs can't become data leaks.
 - **The service-role key is compile-time fenced** (`server-only`) and used
-  exclusively by the cron pipeline.
+  exclusively by the cron pipeline — it's a build error to import it from
+  anywhere a client bundle could reach.
 - **Edge-triggered alerts** — an alert notifies when the rate crosses the
   target, then stays silent until the rate retreats and crosses again
-  (`trigger_state` state machine).
+  (`trigger_state` state machine), so you get one email, not one per day the
+  condition holds.
 - **Idempotent notifications** — a unique `(alert_id, trigger_date)` row is
   claimed *before* sending; duplicate cron runs can't double-send. Failed
-  emails are retried on the next run with the same Resend idempotency key.
-- **One upstream API call per day** — all alerts' pairs are derived from a
-  single USD-base quote fetch (free-tier friendly).
+  emails retry on the next run with the same Resend idempotency key.
+- **One upstream API call per day** — every alert's pair is derived from a
+  single USD-base quote fetch, so the free tier of the rates API never runs
+  out regardless of user count.
 
-## Project structure
+## Evals
 
-```
-src/
-  app/                  # routes: (marketing), (auth), (dashboard), api/cron
-  components/ui/        # shadcn/ui primitives
-  features/
-    auth/               # schemas, actions, forms
-    alerts/             # schemas, actions, CRUD UI, evaluation state machine
-    notifications/      # claim/mark service + daily cron orchestrator
-  lib/
-    supabase/           # browser / server / admin clients, middleware
-    exchange-rates/     # typed client (retry, timeout), cross-rate math
-    email/              # Resend sender + HTML template
-    env.ts              # Zod-validated environment (fails at boot)
-supabase/migrations/    # schema + RLS policies
-tests/                  # unit + integration suites
+The unit suite mocks Claude to test the plumbing around it; a separate
+**eval** measures whether Claude *itself* maps a plain-English request to the
+right structured alert — a claim unit tests can't make.
+
+```bash
+npm run eval     # needs ANTHROPIC_API_KEY; writes evals/interpret/results.md
 ```
 
-## Local development
+The run fails if accuracy drops below `EVAL_MIN_ACCURACY` (default `0.8`), so
+a prompt or model regression is caught before it ships. Latest run
+([full report](evals/interpret/results.md)):
 
-### 1. Prerequisites
+| Category | Accuracy | | Category | Accuracy |
+|---|---|---|---|---|
+| direct | 4/4 | | direction | 3/3 |
+| remittance | 5/5 | | multilingual | 2/3 |
+| no_number | 3/3 | | ambiguous | 2/2 |
+
+**Overall: 19/20 (95%)** against `claude-haiku-4-5`. The one miss is a
+Portuguese case where the model inverted the currency direction — exactly the
+kind of edge an eval surfaces that mocked unit tests cannot. See
+[`evals/`](evals/) for the dataset and grader.
+
+## Security model
+
+- RLS on every table; users can only see/mutate their own alerts, only read
+  their own notifications, and cannot touch market data at all.
+- Server Actions re-verify the session and re-validate input with Zod on
+  every call; `user_id` always derives from the session, never the client.
+- The cron endpoint requires a constant-time-compared Bearer secret.
+- Secrets never reach the client: `server-only` makes it a build error.
+- Generic error messages to clients; details only in server logs.
+
+<details>
+<summary><strong>Running it locally</strong></summary>
+
+### Prerequisites
 
 - Node 20+
 - A [Supabase](https://supabase.com) project
 - A [Resend](https://resend.com) API key (free tier)
 - An [exchangerate.host](https://exchangerate.host) access key (free tier)
 
-### 2. Database
+### 1. Database
 
 ```bash
 npx supabase login
 npx supabase link --project-ref <your-project-ref>
-npx supabase db push        # applies both migrations (schema + RLS)
+npx supabase db push        # applies schema, RLS, and unsubscribe migrations
 ```
 
-### 3. Supabase Auth settings
+### 2. Supabase Auth settings
 
 In the Supabase dashboard:
 
 1. **Authentication → URL Configuration** → Site URL: `http://localhost:3000`
    (your production URL later).
-2. **Authentication → Email Templates → Confirm signup** → replace the link with:
+2. **Authentication → Email Templates → Confirm signup** → replace the link
+   with:
    ```html
    <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup">Confirm your email</a>
    ```
    (Or disable **Confirm email** under Sign In / Providers → Email for
    friction-free testing — the app handles both modes.)
 
-### 4. Environment
+### 3. Environment
 
 ```bash
 cp .env.example .env.local
@@ -122,18 +174,18 @@ cp .env.example .env.local
 | `EMAIL_FROM` | Optional sender; defaults to Resend onboarding sender |
 | `EXCHANGERATE_API_KEY` | **Secret.** Market data access key |
 | `CRON_SECRET` | **Secret.** Bearer token protecting the cron endpoint |
-| `ANTHROPIC_API_KEY` | **Optional, Secret.** Enables plain-English alert setup (Claude). Omit to disable; manual form unaffected |
+| `ANTHROPIC_API_KEY` | **Optional, Secret.** Enables plain-English alert setup. Omit to disable; manual form unaffected |
 | `NEXT_PUBLIC_APP_URL` | Absolute app URL (links in emails) |
 
 All variables are Zod-validated at boot (`src/lib/env.ts`) — a missing secret
 fails the server immediately instead of failing silently at 6am.
 
-### 5. Run
+### 4. Run
 
 ```bash
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 72 unit + integration tests
+npm test             # 102 unit + integration tests
 ```
 
 Trigger the daily pipeline manually:
@@ -145,80 +197,20 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/chec
 Run it twice — the second response reports `alreadyClaimed` instead of
 `emailsSent`. That's the idempotency lock working.
 
-## Evals
+### Deploying
 
-The unit suite mocks Claude to test the plumbing; an **eval** measures whether
-Claude itself maps a plain-English request to the right structured alert. It
-scores the real model call against a golden set weighted toward the remittance
-audience — remittance direction reasoning, no-number intents, multilingual
-inputs, and cases the model should *clarify* rather than guess.
+1. Push this repo to GitHub and **Import** it at vercel.com/new (Next.js
+   preset; `vercel.json` already defines the cron).
+2. Add all environment variables above under *Project Settings →
+   Environment Variables* (Production). Set `NEXT_PUBLIC_APP_URL` to your
+   Vercel URL.
+3. Deploy — Vercel registers `GET /api/cron/check-rates` daily at
+   **06:00 UTC** and sends `Authorization: Bearer ${CRON_SECRET}`
+   automatically.
+4. In Supabase: set Site URL to your Vercel URL, and verify a sending
+   domain in Resend (`EMAIL_FROM="RateWatch <alerts@yourdomain.com>"`).
 
-```bash
-npm run eval     # needs ANTHROPIC_API_KEY; writes evals/interpret/results.md
-```
+Full operational detail — production checklist, what to do when something
+breaks, how to read the logs — lives in **[`RUNBOOK.md`](RUNBOOK.md)**.
 
-The run fails if accuracy drops below `EVAL_MIN_ACCURACY` (default `0.8`), so a
-prompt or model regression is caught before it ships. Latest run
-([full report](evals/interpret/results.md)):
-
-| Category | Accuracy | | Category | Accuracy |
-|---|---|---|---|---|
-| direct | 4/4 | | direction | 3/3 |
-| remittance | 5/5 | | multilingual | 2/3 |
-| no_number | 3/3 | | ambiguous | 2/2 |
-
-**Overall: 19/20 (95%)** against `claude-haiku-4-5`. The one miss is a Portuguese
-case where the model inverted the currency direction — exactly the kind of edge
-an eval surfaces that mocked unit tests cannot. See [`evals/`](evals/) for the
-dataset and grader.
-
-## Deploying to production
-
-### Vercel
-
-1. Push this repo to GitHub and **Import** it at vercel.com/new.
-2. Framework preset: **Next.js** (defaults are correct; `vercel.json` already
-   defines the cron).
-3. Add **all environment variables** from the table above in
-   *Project Settings → Environment Variables* (Production). Set
-   `NEXT_PUBLIC_APP_URL` to your Vercel URL (no trailing slash).
-4. Deploy. Vercel registers the cron from `vercel.json`:
-   `GET /api/cron/check-rates` daily at **06:00 UTC**. Vercel automatically
-   sends `Authorization: Bearer ${CRON_SECRET}`.
-
-### Supabase (production)
-
-1. **Authentication → URL Configuration** → set Site URL to your Vercel URL.
-2. Confirm-signup email template uses the `token_hash` link (step 3 above).
-
-### Resend (production)
-
-- Verify a domain under **Domains**, then set
-  `EMAIL_FROM="RateWatch <alerts@yourdomain.com>"`. Until then, the default
-  onboarding sender only delivers to your own Resend account email.
-
-## Production checklist
-
-- [ ] Migrations applied (`supabase db push` against the production project)
-- [ ] All env vars set in Vercel (Production scope)
-- [ ] `CRON_SECRET` is long and random (`openssl rand -hex 32`)
-- [ ] `NEXT_PUBLIC_APP_URL` = production URL (email links depend on it)
-- [ ] Supabase Site URL = production URL (confirmation links depend on it)
-- [ ] Confirm-signup email template updated (token_hash link)
-- [ ] Resend domain verified + `EMAIL_FROM` set (or accept sandbox limits)
-- [ ] Post-deploy: `curl -H "Authorization: Bearer <secret>" https://<app>/api/cron/check-rates` returns `{ ok: true, ... }`
-- [ ] Post-deploy: curl without the header returns 401
-- [ ] Vercel → Project → Cron Jobs shows the job as registered
-- [ ] Sign up with a real account, create an alert with an
-      already-satisfied condition, run the cron once, receive the email
-- [ ] Run the cron a second time and verify no duplicate email arrives
-
-## Security model
-
-- RLS on every table; users can only see/mutate their own alerts, only read
-  their own notifications, and cannot touch market data at all.
-- Server Actions re-verify the session and re-validate input with Zod on
-  every call; `user_id` always derives from the session.
-- Cron endpoint requires a constant-time-compared Bearer secret.
-- Secrets never reach the client: `server-only` makes it a build error.
-- Generic error messages to clients; details only in server logs.
+</details>
