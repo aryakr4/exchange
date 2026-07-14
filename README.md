@@ -10,13 +10,13 @@
 
 ---
 
-Someone wiring wages to family abroad doesn't think in `USD/MXN ≥ 17.5` — they
-think *"tell me when my dollars send more pesos to my mom."* RateWatch lets
-them say exactly that: describe the alert in plain English, Claude turns it
-into a structured target, and one email lands the day the rate turns in their
-favor — so more reaches home.
+A worker sending wages home doesn't lose money to fees alone — they lose it to
+bad timing, because nobody checks the rate every day for them. RateWatch does.
+Set a target once — plain English, not `USD/MXN ≥ 17.5` — and it emails you
+the day the market turns in your favor, so more of what you send actually
+reaches home.
 
-Strip away the copy and it's a currency-rate alerter: create an alert like
+Strip away the framing and it's a currency-rate alerter: create an alert like
 **USD → MXN ≥ 17.5**, and RateWatch checks the market daily and emails you the
 moment your target is reached — exactly once per threshold crossing, forever
 free, nothing to open in between.
@@ -31,10 +31,13 @@ but are the difference between a toy and something you'd trust with your
 mom's remittance:
 
 - **An LLM feature with an actual eval harness**, not vibes. Plain-English →
-  structured alert is graded against a golden set (remittance-direction
-  reasoning, multilingual input, ambiguous cases the model should refuse to
-  guess on) and the build fails if accuracy drops below threshold. See
-  [Evals](#evals).
+  structured alert is graded against a golden set and the build fails if
+  accuracy drops below threshold. See [Evals](#evals).
+- **The eval set includes cases the model should *refuse* to guess on** —
+  ambiguous requests where the right answer is a clarifying question, not a
+  confident wrong alert. Getting those right is scored the same as getting a
+  clear request right; getting them wrong (guessing) is scored as a failure,
+  same as any other wrong answer.
 - **Idempotency taken seriously.** A cron job that emails people is exactly
   the kind of thing that silently double-sends during a redeploy or a retry.
   Here it can't — a unique `(alert_id, trigger_date)` claim row makes
@@ -113,8 +116,30 @@ a prompt or model regression is caught before it ships. Latest run
 
 **Overall: 19/20 (95%)** against `claude-haiku-4-5`. The one miss is a
 Portuguese case where the model inverted the currency direction — exactly the
-kind of edge an eval surfaces that mocked unit tests cannot. See
+kind of edge an eval surfaces that mocked unit tests cannot. The `ambiguous`
+category (2/2) is graded on whether the model asks rather than guesses when a
+request is genuinely underspecified — a confident wrong alert is worse than no
+alert, so that's treated as a correctness dimension, not an afterthought. See
 [`evals/`](evals/) for the dataset and grader.
+
+## What's not done
+
+Scoped deliberately, not accidentally missing:
+
+- **One check per day, not real-time.** A user whose target is crossed and
+  reverses within the same day never hears about it. Fine for a "set it and
+  forget it" tool checking daily market close; wrong if this ever needs to
+  serve intraday/volatile-pair use cases.
+- **No SMS/push.** Email-only was a scope call, not a technical constraint —
+  the notification path is already provider-agnostic at the service boundary,
+  so a second channel is additive, not a rewrite.
+- **Single rate source, no fallback.** exchangerate.host going down for a day
+  means that day's check silently no-ops rather than alerting on stale data —
+  the safer failure mode, but a second provider would remove the single point
+  of failure.
+- **No rate history UI.** The dashboard shows current state, not a chart of
+  where a pair has been — deferred because the alert (not the chart) is the
+  product; would revisit if user feedback asked for it.
 
 ## Security model
 
