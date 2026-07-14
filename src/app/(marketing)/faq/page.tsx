@@ -26,8 +26,9 @@ const FAQS: { question: string; text: string; answer: React.ReactNode }[] = [
     text: "It's free. RateWatch is an informational tool with no subscription tiers, and we never charge to send you an alert.",
     answer: (
       <p>
-        It&rsquo;s free. RateWatch is an informational tool — there are no
-        subscription tiers and we never charge to send you an alert.
+        It&rsquo;s <strong>free</strong>. RateWatch is an informational tool —
+        there are no subscription tiers and we never charge to send you an
+        alert.
       </p>
     ),
   },

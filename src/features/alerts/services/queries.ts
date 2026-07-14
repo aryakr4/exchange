@@ -25,3 +25,23 @@ export async function getAlertsForCurrentUser(): Promise<Alert[]> {
 
   return data;
 }
+
+/**
+ * Whether the signed-in user has opted out of alert email. RLS scopes the read
+ * to their own profile row.
+ */
+export async function getEmailOptOutForCurrentUser(): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("email_opt_out")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[alerts] failed to load email opt-out:", error.message);
+    return false; // Never block the dashboard on this.
+  }
+
+  return data?.email_opt_out ?? false;
+}

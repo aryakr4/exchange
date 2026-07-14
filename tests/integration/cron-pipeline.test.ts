@@ -55,7 +55,11 @@ function makeAlert(overrides: Record<string, unknown> = {}) {
     target_rate: 0.95,
     condition: "greater_than",
     trigger_state: "armed",
-    profiles: { email: "user@example.com" },
+    profiles: {
+      email: "user@example.com",
+      email_opt_out: false,
+      unsubscribe_token: "tok-1",
+    },
     ...overrides,
   };
 }
@@ -193,7 +197,11 @@ describe("runDailyRateCheck", () => {
           target_rate: 0.95,
           condition: "greater_than",
         },
-        profiles: { email: "user@example.com" },
+        profiles: {
+          email: "user@example.com",
+          email_opt_out: false,
+          unsubscribe_token: "tok-1",
+        },
       },
     ]);
 
@@ -221,5 +229,108 @@ describe("runDailyRateCheck", () => {
       { from: "USD", to: "EUR" },
       { from: "GBP", to: "JPY" },
     ]);
+  });
+
+  it("passes unsubscribe URLs to the email", async () => {
+    activeAlerts = [makeAlert()];
+
+    await runDailyRateCheck();
+
+    expect(sendRateAlertEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          unsubscribeUrl: expect.stringContaining("/unsubscribe?token=tok-1"),
+          oneClickUnsubscribeUrl: expect.stringContaining(
+            "/api/unsubscribe?token=tok-1"
+          ),
+        }),
+      })
+    );
+  });
+
+  it("suppresses email for an opted-out owner and leaves the alert armed", async () => {
+    activeAlerts = [
+      makeAlert({
+        profiles: {
+          email: "user@example.com",
+          email_opt_out: true,
+          unsubscribe_token: "tok-1",
+        },
+      }),
+    ];
+
+    const summary = await runDailyRateCheck();
+
+    expect(claimNotification).not.toHaveBeenCalled();
+    expect(sendRateAlertEmail).not.toHaveBeenCalled();
+    // The state machine holds one state, not a queue: advancing to
+    // "triggered" here would mute the user until the rate retreated and
+    // re-crossed after they resumed. Leaving it "armed" means a resume while
+    // the target is still met yields exactly one email, with the current rate.
+    expect(alertUpdates).not.toContainEqual(
+      expect.objectContaining({ id: "alert-1" })
+    );
+    expect(summary.suppressed).toBe(1);
+    expect(summary.emailsSent).toBe(0);
+  });
+
+  it("still re-arms an opted-out user's alert when the rate retreats", async () => {
+    activeAlerts = [
+      makeAlert({
+        trigger_state: "triggered",
+        profiles: {
+          email: "user@example.com",
+          email_opt_out: true,
+          unsubscribe_token: "tok-1",
+        },
+      }),
+    ];
+    getMultipleRates.mockResolvedValue({
+      rates: [{ base: "USD", quote: "EUR", rate: 0.9, fetchedAt: FETCHED_AT }],
+      failedPairs: [],
+      fetchedAt: FETCHED_AT,
+    });
+
+    const summary = await runDailyRateCheck();
+
+    expect(alertUpdates).toContainEqual({
+      payload: { trigger_state: "armed" },
+      id: "alert-1",
+    });
+    expect(summary.rearmed).toBe(1);
+  });
+
+  it("the retry sweep never emails an owner who has opted out", async () => {
+    // Regression guard for the subtlest hole in this feature: the sweep
+    // re-sends rows claimed on EARLIER runs. A user whose send failed
+    // yesterday and who unsubscribed today would otherwise be emailed by
+    // tomorrow's sweep — after unsubscribing.
+    //
+    // The query in notifications.ts already excludes these rows; this test
+    // feeds one through anyway to prove the sweep also skips it defensively.
+    getUnsentNotifications.mockResolvedValue([
+      {
+        id: "notif-old",
+        rate: 0.97,
+        trigger_date: "2026-06-09",
+        alerts: {
+          from_currency: "USD",
+          to_currency: "EUR",
+          target_rate: 0.95,
+          condition: "greater_than",
+        },
+        profiles: {
+          email: "user@example.com",
+          email_opt_out: true,
+          unsubscribe_token: "tok-1",
+        },
+      },
+    ]);
+
+    const summary = await runDailyRateCheck();
+
+    expect(sendRateAlertEmail).not.toHaveBeenCalled();
+    expect(markNotificationSent).not.toHaveBeenCalled();
+    expect(summary.sweepSent).toBe(0);
   });
 });

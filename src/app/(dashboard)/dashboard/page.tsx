@@ -3,14 +3,21 @@ import type { Metadata } from "next";
 import { AlertsEmptyState } from "@/features/alerts/components/alerts-empty-state";
 import { AlertsTable } from "@/features/alerts/components/alerts-table";
 import { CreateAlertDialog } from "@/features/alerts/components/create-alert-dialog";
-import { getAlertsForCurrentUser } from "@/features/alerts/services/queries";
+import {
+  getAlertsForCurrentUser,
+  getEmailOptOutForCurrentUser,
+} from "@/features/alerts/services/queries";
+import { EmailPausedBanner } from "@/features/notifications/components/email-paused-banner";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
 export default async function DashboardPage() {
-  const alerts = await getAlertsForCurrentUser();
+  const [alerts, emailPaused] = await Promise.all([
+    getAlertsForCurrentUser(),
+    getEmailOptOutForCurrentUser(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -24,6 +31,8 @@ export default async function DashboardPage() {
         </div>
         <CreateAlertDialog />
       </div>
+
+      {emailPaused && <EmailPausedBanner />}
 
       {alerts.length === 0 ? (
         <AlertsEmptyState />

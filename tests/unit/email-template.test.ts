@@ -11,6 +11,8 @@ const baseData = {
   condition: "greater_than" as const,
   triggeredAt: new Date("2026-06-10T06:00:00Z"),
   appUrl: "https://ratewatch.example.com",
+  unsubscribeUrl: "https://ratewatch.example.com/unsubscribe?token=tok-1",
+  oneClickUnsubscribeUrl: "https://ratewatch.example.com/api/unsubscribe?token=tok-1",
 };
 
 describe("buildRateAlertEmail", () => {
@@ -55,5 +57,34 @@ describe("buildRateAlertEmail", () => {
     });
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("unsubscribe affordances", () => {
+  const data = {
+    userEmail: "user@example.com",
+    fromCurrency: "USD",
+    toCurrency: "EUR",
+    targetRate: 0.95,
+    currentRate: 0.96,
+    condition: "greater_than" as const,
+    triggeredAt: new Date("2026-06-10T06:00:00Z"),
+    appUrl: "https://ratewatch.app",
+    unsubscribeUrl: "https://ratewatch.app/unsubscribe?token=tok-1",
+    oneClickUnsubscribeUrl: "https://ratewatch.app/api/unsubscribe?token=tok-1",
+  };
+
+  it("links to unsubscribe from the HTML footer", () => {
+    const { html } = buildRateAlertEmail(data);
+
+    expect(html).toContain('href="https://ratewatch.app/unsubscribe?token=tok-1"');
+    expect(html).toContain("Unsubscribe");
+  });
+
+  it("includes the unsubscribe URL in the plain-text part", () => {
+    // Not optional: HTML-only unsubscribe is a documented spam-filter penalty.
+    const { text } = buildRateAlertEmail(data);
+
+    expect(text).toContain("https://ratewatch.app/unsubscribe?token=tok-1");
   });
 });

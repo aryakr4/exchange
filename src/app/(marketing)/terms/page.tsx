@@ -141,10 +141,10 @@ export default function TermsPage() {
           <p>
             Questions? Email{" "}
             <a
-              href="mailto:legal@ratewatch.app"
+              href="mailto:skullsupernatural@gmail.com"
               className="text-brand underline underline-offset-4"
             >
-              legal@ratewatch.app
+              skullsupernatural@gmail.com
             </a>
             . See also our{" "}
             <Link
